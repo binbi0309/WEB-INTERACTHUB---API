@@ -19,12 +19,12 @@ function UserList() {
   }
 
   if (isError) {
-    return <Alert severity="error">Khong the tai users: {error.message}</Alert>
+    return <Alert severity="error">Không thể tải người dùng: {error.message}</Alert>
   }
 
   return (
     <Stack spacing={2}>
-      <Typography variant="h6">Danh sach users</Typography>
+      <Typography variant="h6">Danh sách người dùng</Typography>
       <List sx={{ bgcolor: 'background.paper', borderRadius: 2 }}>
         {data?.slice(0, 8).map((user) => (
           <ListItem key={user.id} divider>

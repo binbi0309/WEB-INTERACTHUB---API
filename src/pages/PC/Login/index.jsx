@@ -2,6 +2,10 @@ import { useMemo, useState } from 'react'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
+import Dialog from '@mui/material/Dialog'
+import DialogActions from '@mui/material/DialogActions'
+import DialogContent from '@mui/material/DialogContent'
+import DialogTitle from '@mui/material/DialogTitle'
 import IconButton from '@mui/material/IconButton'
 import InputAdornment from '@mui/material/InputAdornment'
 import Link from '@mui/material/Link'
@@ -26,12 +30,12 @@ const initialTouched = {
 
 function validateEmail(value) {
   if (!value.trim()) {
-    return 'Vui long nhap dia chi email.'
+    return 'Vui lòng nhập địa chỉ email.'
   }
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (!emailRegex.test(value)) {
-    return 'Email khong dung dinh dang.'
+    return 'Email không đúng định dạng.'
   }
 
   return ''
@@ -39,7 +43,7 @@ function validateEmail(value) {
 
 function validatePassword(value) {
   if (!value) {
-    return 'Vui long nhap mat khau.'
+    return 'Vui lòng nhập mật khẩu.'
   }
 
   return ''
@@ -50,6 +54,8 @@ function LoginPage() {
   const [touched, setTouched] = useState(initialTouched)
   const [showPassword, setShowPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isForgotOpen, setIsForgotOpen] = useState(false)
+  const [forgotEmail, setForgotEmail] = useState('')
   const [notification, setNotification] = useState({
     open: false,
     severity: 'error',
@@ -112,7 +118,7 @@ function LoginPage() {
       setNotification({
         open: true,
         severity: 'error',
-        message: 'Vui long kiem tra lai thong tin dang nhap.',
+        message: 'Vui lòng kiểm tra lại thông tin đăng nhập.',
       })
       return
     }
@@ -125,7 +131,7 @@ function LoginPage() {
           const wrongEmail = form.email.toLowerCase().includes('wrong')
           const wrongPassword = form.password !== '12345678'
           if (wrongEmail || wrongPassword) {
-            reject(new Error('Email hoac mat khau khong chinh xac.'))
+            reject(new Error('Email hoặc mật khẩu không chính xác.'))
             return
           }
 
@@ -136,7 +142,7 @@ function LoginPage() {
       setNotification({
         open: true,
         severity: 'success',
-        message: 'Dang nhap thanh cong.',
+        message: 'Đăng nhập thành công.',
       })
       setForm(initialForm)
       setTouched(initialTouched)
@@ -144,11 +150,41 @@ function LoginPage() {
       setNotification({
         open: true,
         severity: 'error',
-        message: error.message || 'Dang nhap that bai. Vui long thu lai.',
+        message: error.message || 'Đăng nhập thất bại. Vui lòng thử lại.',
       })
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  const handleOpenForgotPassword = () => {
+    setForgotEmail(form.email)
+    setIsForgotOpen(true)
+  }
+
+  const handleCloseForgotPassword = () => {
+    setIsForgotOpen(false)
+  }
+
+  const handleForgotPasswordSubmit = (event) => {
+    event.preventDefault()
+
+    const emailError = validateEmail(forgotEmail)
+    if (emailError) {
+      setNotification({
+        open: true,
+        severity: 'error',
+        message: emailError,
+      })
+      return
+    }
+
+    setIsForgotOpen(false)
+    setNotification({
+      open: true,
+      severity: 'success',
+      message: 'Yêu cầu đặt lại mật khẩu đã được gửi. Vui lòng kiểm tra email.',
+    })
   }
 
   return (
@@ -187,14 +223,14 @@ function LoginPage() {
             </Stack>
 
             <Typography variant="h4" component="h1" sx={{ fontWeight: 700, mt: 1 }}>
-              Dang nhap
+              Đăng nhập
             </Typography>
-            <Typography color="text.secondary">Dang nhap de tiep tuc su dung InteractHub.</Typography>
+            <Typography color="text.secondary">Đăng nhập để tiếp tục sử dụng InteractHub.</Typography>
           </Stack>
 
           <Stack spacing={1.5}>
             <TextField
-              label="Dia chi email"
+              label="Địa chỉ email"
               name="email"
               type="email"
               value={form.email}
@@ -205,7 +241,7 @@ function LoginPage() {
               fullWidth
             />
             <TextField
-              label="Mat khau"
+              label="Mật khẩu"
               name="password"
               type={showPassword ? 'text' : 'password'}
               value={form.password}
@@ -221,7 +257,7 @@ function LoginPage() {
                       <IconButton
                         onClick={() => setShowPassword((prev) => !prev)}
                         edge="end"
-                        aria-label={showPassword ? 'An mat khau' : 'Hien mat khau'}
+                        aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
                       >
                         {showPassword ? <VisibilityOffRoundedIcon /> : <VisibilityRoundedIcon />}
                       </IconButton>
@@ -230,16 +266,21 @@ function LoginPage() {
                 },
               }}
             />
+            <Stack direction="row" justifyContent="flex-end" sx={{ mt: -0.5 }}>
+              <Link component="button" type="button" underline="hover" onClick={handleOpenForgotPassword}>
+                Quên mật khẩu?
+              </Link>
+            </Stack>
           </Stack>
 
           <Button type="submit" variant="contained" size="large" fullWidth disabled={isSubmitting}>
-            {isSubmitting ? 'Dang dang nhap...' : 'Dang nhap'}
+            {isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
           </Button>
 
           <Typography textAlign="center" color="text.secondary">
-            Chua co tai khoan?{' '}
+            Chưa có tài khoản?{' '}
             <Link component={RouterLink} to="/register" underline="hover" fontWeight={600}>
-              Dang ky ngay
+              Đăng ký ngay
             </Link>
           </Typography>
         </Stack>
@@ -255,6 +296,31 @@ function LoginPage() {
           {notification.message}
         </Alert>
       </Snackbar>
+
+      <Dialog open={isForgotOpen} onClose={handleCloseForgotPassword} fullWidth maxWidth="xs">
+        <Box component="form" onSubmit={handleForgotPasswordSubmit}>
+          <DialogTitle>Quên mật khẩu</DialogTitle>
+          <DialogContent>
+            <TextField
+              autoFocus
+              margin="dense"
+              label="Địa chỉ email"
+              type="email"
+              fullWidth
+              value={forgotEmail}
+              onChange={(event) => setForgotEmail(event.target.value)}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseForgotPassword} color="inherit">
+              Hủy
+            </Button>
+            <Button type="submit" variant="contained">
+              Gửi yêu cầu
+            </Button>
+          </DialogActions>
+        </Box>
+      </Dialog>
     </Box>
   )
 }

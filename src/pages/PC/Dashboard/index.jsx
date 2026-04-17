@@ -16,10 +16,10 @@ import ShareRoundedIcon from '@mui/icons-material/ShareRounded'
 
 const profile = {
   name: 'Marcus Sterling',
-  title: 'Kien truc su san pham so',
+  title: 'Kiến trúc sư sản phẩm số',
   location: 'NYC',
   bio:
-    'Xay dung tuong lai cua nhung trai nghiem ket noi. Tap trung vao cac he thong thiet ke toi gian, kieu chu bien tap va su giao thoa giua tam ly hoc con nguoi voi giai dien ky thuat so.',
+    'Xây dựng tương lai của những trải nghiệm kết nối. Tập trung vào các hệ thống thiết kế tối giản, kiểu chữ biên tập và sự giao thoa giữa tâm lý học con người với giao diện kỹ thuật số.',
   coverImage:
     'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=80',
   avatarImage:
@@ -27,30 +27,30 @@ const profile = {
 }
 
 const stats = [
-  { label: 'Bai viet', value: '1.2K' },
-  { label: 'Ban be', value: '842' },
-  { label: 'Du an', value: '15' },
+  { label: 'Bài viết', value: '1.2K' },
+  { label: 'Bạn bè', value: '842' },
+  { label: 'Dự án', value: '15' },
 ]
 
 const personalPosts = [
   {
     id: 1,
-    title: 'Kham pha cac gioi han cua thiet ke don sac trong kien truc web hien dai',
+    title: 'Khám phá các giới hạn của thiết kế đơn sắc trong kiến trúc web hiện đại',
     excerpt:
-      'Bi quyet cua mot giao dien cao cap khong nam o so luong tinh nang, ma o chat luong cua cac khoang trang giua chung.',
+      'Bí quyết của một giao diện cao cấp không nằm ở số lượng tính năng, mà ở chất lượng của các khoảng trắng giữa chúng.',
     image:
       'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1200&q=80',
-    time: '2 gio truoc',
+    time: '2 giờ trước',
     stats: { likes: 124, comments: 18 },
   },
   {
     id: 2,
-    title: 'Su tien hoa cua cac framework React va su tro lai cua su don gian phia may chu',
+    title: 'Sự tiến hóa của các framework React và sự trở lại của sự đơn giản phía máy chủ',
     excerpt:
-      'Chu ky phat trien front-end da thay doi trong 5 nam qua. Chung ta dan dich chuyen logic sang phia client, roi can bang tro lai.',
+      'Chu kỳ phát triển front-end đã thay đổi trong 5 năm qua. Chúng ta dần dịch chuyển logic sang phía client, rồi cân bằng trở lại.',
     image:
       'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=1200&q=80',
-    time: '1 ngay truoc',
+    time: '1 ngày trước',
     stats: { likes: 97, comments: 9 },
   },
 ]
@@ -93,7 +93,7 @@ function DashboardPage() {
                   startIcon={<ModeEditOutlineRoundedIcon />}
                   sx={{ borderRadius: 999, px: 1.5, minHeight: 32 }}
                 >
-                  Cap nhat ho so
+                  Cập nhật hồ sơ
                 </Button>
               </Stack>
               <Typography color="text.secondary">
@@ -110,7 +110,7 @@ function DashboardPage() {
         <Card sx={{ height: 'fit-content', borderRadius: 3 }}>
           <CardContent>
             <Typography fontWeight={700} sx={{ mb: 2 }}>
-              Stats
+              Thống kê
             </Typography>
             <Stack direction="row" spacing={1}>
               {stats.map((item) => (
@@ -169,7 +169,7 @@ function DashboardPage() {
                     <Button size="small" startIcon={<FavoriteBorderRoundedIcon />}>
                       {post.stats.likes}
                     </Button>
-                    <Button size="small">{post.stats.comments} binh luan</Button>
+                    <Button size="small">{post.stats.comments} bình luận</Button>
                   </Stack>
                   <IconButton size="small">
                     <ShareRoundedIcon fontSize="small" />

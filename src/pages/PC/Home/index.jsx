@@ -26,24 +26,24 @@ import TuneRoundedIcon from '@mui/icons-material/TuneRounded'
 import VideocamRoundedIcon from '@mui/icons-material/VideocamRounded'
 
 const trendingHashtags = [
-  { id: 1, tag: '#AdaptiveAI', posts: '12K bai viet' },
-  { id: 2, tag: '#MarketPivot', posts: '8.4K bai viet' },
-  { id: 3, tag: '#SpatialComputing', posts: '5.6K bai viet' },
+  { id: 1, tag: '#AdaptiveAI', posts: '12K bài viết' },
+  { id: 2, tag: '#MarketPivot', posts: '8.4K bài viết' },
+  { id: 3, tag: '#SpatialComputing', posts: '5.6K bài viết' },
 ]
 
 const suggestions = [
-  { id: 1, name: 'Amara Kojo', role: 'Quan ly san pham' },
-  { id: 2, name: 'Soren West', role: 'Giam doc sang tao' },
+  { id: 1, name: 'Amara Kojo', role: 'Quản lý sản phẩm' },
+  { id: 2, name: 'Soren West', role: 'Giám đốc sáng tạo' },
 ]
 
 const posts = [
   {
     id: 1,
     author: 'Liam Vance',
-    role: 'Kien truc su',
-    time: '2 gio truoc',
+    role: 'Kiến trúc sư',
+    time: '2 giờ trước',
     content:
-      'Dinh nghia lai su giao thoa giua hinh thai huu co va do chinh xac ve cau truc. Du an gian hang moi nay tap trung vao viec don anh sang buoi sang thong qua cac lop go ben vung.',
+      'Định nghĩa lại sự giao thoa giữa hình thái hữu cơ và độ chính xác về cấu trúc. Dự án gian hàng mới này tập trung vào việc đón ánh sáng buổi sáng thông qua các lớp gỗ bền vững.',
     image:
       'https://images.unsplash.com/photo-1511818966892-d7d671e672a2?auto=format&fit=crop&w=1200&q=80',
     stats: { likes: '1.2k', comments: '84' },
@@ -51,10 +51,10 @@ const posts = [
   {
     id: 2,
     author: 'Industrial Intelligence',
-    role: 'Duoc tai tro',
-    time: '4 gio truoc',
+    role: 'Được tài trợ',
+    time: '4 giờ trước',
     content:
-      'Tuong lai cua logistics tu hanh dang duoc day nhanh boi cac he thong AI va chuoi cung ung ket noi theo thoi gian thuc.',
+      'Tương lai của logistics tự hành đang được đẩy nhanh bởi các hệ thống AI và chuỗi cung ứng kết nối theo thời gian thực.',
     image:
       'https://images.unsplash.com/photo-1493238792000-8113da705763?auto=format&fit=crop&w=1200&q=80',
     stats: { likes: '430', comments: '26' },
@@ -62,9 +62,9 @@ const posts = [
 ]
 
 const desktopMenus = [
-  { id: 'home', label: 'Trang chu', icon: <HomeRoundedIcon fontSize="small" />, active: true },
-  { id: 'friends', label: 'Ban be', icon: <PeopleRoundedIcon fontSize="small" /> },
-  { id: 'notifications', label: 'Thong bao', icon: <NotificationsNoneRoundedIcon fontSize="small" /> },
+  { id: 'home', label: 'Trang chủ', icon: <HomeRoundedIcon fontSize="small" />, active: true },
+  { id: 'friends', label: 'Bạn bè', icon: <PeopleRoundedIcon fontSize="small" /> },
+  { id: 'notifications', label: 'Thông báo', icon: <NotificationsNoneRoundedIcon fontSize="small" /> },
 ]
 
 function HomePage() {
@@ -104,7 +104,7 @@ function HomePage() {
           }}
         >
           <SearchRoundedIcon color="action" fontSize="small" />
-          <InputBase placeholder="Tim kiem..." sx={{ width: '100%' }} />
+          <InputBase placeholder="Tìm kiếm..." sx={{ width: '100%' }} />
         </Paper>
 
         <Stack direction="row" spacing={1}>
@@ -146,7 +146,7 @@ function HomePage() {
                 <Stack direction="row" spacing={1.5}>
                   <Avatar sx={{ width: 42, height: 42 }}>T</Avatar>
                   <InputBase
-                    placeholder="Ban dang nghi gi?"
+                    placeholder="Bạn đang nghĩ gì?"
                     sx={{
                       px: 2,
                       py: 1,
@@ -156,16 +156,16 @@ function HomePage() {
                     }}
                   />
                   <Button variant="contained" sx={{ borderRadius: 2, px: 2.5 }}>
-                    Dang
+                    Đăng
                   </Button>
                 </Stack>
                 <Divider sx={{ my: 1.5 }} />
                 <Stack direction="row" spacing={1.5}>
                   <Button startIcon={<InsertPhotoRoundedIcon />} size="small">
-                    Anh/Video
+                    Ảnh/Video
                   </Button>
                   <Button startIcon={<VideocamRoundedIcon />} size="small">
-                    Su kien
+                    Sự kiện
                   </Button>
                 </Stack>
               </CardContent>
@@ -198,7 +198,7 @@ function HomePage() {
                       <Button size="small" startIcon={<FavoriteBorderRoundedIcon />}>
                         {post.stats.likes}
                       </Button>
-                      <Button size="small">{post.stats.comments} binh luan</Button>
+                      <Button size="small">{post.stats.comments} bình luận</Button>
                     </Stack>
                     <Stack direction="row">
                       <IconButton size="small">
@@ -218,7 +218,7 @@ function HomePage() {
             <Card sx={{ borderRadius: 3 }}>
               <CardContent>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-                  <Typography fontWeight={700}>Xu huong hien nay</Typography>
+                  <Typography fontWeight={700}>Xu hướng hiện nay</Typography>
                   <TuneRoundedIcon color="action" fontSize="small" />
                 </Stack>
                 <Stack spacing={1.25}>
@@ -237,7 +237,7 @@ function HomePage() {
             <Card sx={{ borderRadius: 3 }}>
               <CardContent>
                 <Typography fontWeight={700} sx={{ mb: 1 }}>
-                  Goi y ket ban
+                  Gợi ý kết bạn
                 </Typography>
                 <Stack spacing={1.25}>
                   {suggestions.map((item) => (
@@ -257,7 +257,7 @@ function HomePage() {
                           </Typography>
                         </Box>
                       </Stack>
-                      <Chip label="Theo doi" size="small" />
+                      <Chip label="Theo dõi" size="small" />
                     </Stack>
                   ))}
                 </Stack>

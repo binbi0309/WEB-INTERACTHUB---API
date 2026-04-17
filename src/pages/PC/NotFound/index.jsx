@@ -7,7 +7,7 @@ function NotFoundPage() {
       <Typography variant="h4" component="h1">
         404
       </Typography>
-      <Typography color="text.secondary">Khong tim thay trang ban yeu cau.</Typography>
+      <Typography color="text.secondary">Không tìm thấy trang bạn yêu cầu.</Typography>
     </Stack>
   )
 }

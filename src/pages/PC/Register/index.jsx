@@ -31,11 +31,11 @@ const initialTouched = {
 
 function validateFullName(value) {
   if (!value.trim()) {
-    return 'Vui long nhap ho va ten.'
+    return 'Vui lòng nhập họ và tên.'
   }
 
   if (value.trim().length < 2) {
-    return 'Ho va ten phai co it nhat 2 ky tu.'
+    return 'Họ và tên phải có ít nhất 2 ký tự.'
   }
 
   return ''
@@ -43,12 +43,12 @@ function validateFullName(value) {
 
 function validateEmail(value) {
   if (!value.trim()) {
-    return 'Vui long nhap dia chi email.'
+    return 'Vui lòng nhập địa chỉ email.'
   }
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (!emailRegex.test(value)) {
-    return 'Email khong dung dinh dang.'
+    return 'Email không đúng định dạng.'
   }
 
   return ''
@@ -56,11 +56,11 @@ function validateEmail(value) {
 
 function validatePassword(value) {
   if (!value) {
-    return 'Vui long nhap mat khau.'
+    return 'Vui lòng nhập mật khẩu.'
   }
 
   if (value.length < 8) {
-    return 'Mat khau phai co it nhat 8 ky tu.'
+    return 'Mật khẩu phải có ít nhất 8 ký tự.'
   }
 
   return ''
@@ -68,11 +68,11 @@ function validatePassword(value) {
 
 function validateConfirmPassword(password, confirmPassword) {
   if (!confirmPassword) {
-    return 'Vui long nhap lai mat khau.'
+    return 'Vui lòng nhập lại mật khẩu.'
   }
 
   if (password !== confirmPassword) {
-    return 'Mat khau nhap lai khong khop.'
+    return 'Mật khẩu nhập lại không khớp.'
   }
 
   return ''
@@ -81,15 +81,15 @@ function validateConfirmPassword(password, confirmPassword) {
 function getPasswordChecks(password, confirmPassword) {
   return [
     {
-      label: '8+ ky tu',
+      label: '8+ ký tự',
       valid: password.length >= 8,
     },
     {
-      label: 'Mot chu so',
+      label: 'Một chữ số',
       valid: /\d/.test(password),
     },
     {
-      label: 'Khop nhau',
+      label: 'Khớp nhau',
       valid: confirmPassword.length > 0 && password === confirmPassword,
       invalid: confirmPassword.length > 0 && password !== confirmPassword,
     },
@@ -167,7 +167,7 @@ function RegisterPage() {
       setNotification({
         open: true,
         severity: 'error',
-        message: 'Vui long kiem tra lai thong tin dang ky.',
+        message: 'Vui lòng kiểm tra lại thông tin đăng ký.',
       })
       return
     }
@@ -178,7 +178,7 @@ function RegisterPage() {
       await new Promise((resolve, reject) => {
         setTimeout(() => {
           if (form.email.toLowerCase().includes('fail') || form.email.toLowerCase().includes('exists')) {
-            reject(new Error('Email nay da ton tai hoac khong the dang ky.'))
+            reject(new Error('Email này đã tồn tại hoặc không thể đăng ký.'))
             return
           }
 
@@ -189,7 +189,7 @@ function RegisterPage() {
       setNotification({
         open: true,
         severity: 'success',
-        message: 'Dang ky thanh cong. Vui long kiem tra hop thu de xac minh email.',
+        message: 'Đăng ký thành công. Vui lòng kiểm tra hộp thư để xác minh email.',
       })
       setForm(initialForm)
       setTouched(initialTouched)
@@ -197,7 +197,7 @@ function RegisterPage() {
       setNotification({
         open: true,
         severity: 'error',
-        message: error.message || 'Dang ky that bai. Vui long thu lai.',
+        message: error.message || 'Đăng ký thất bại. Vui lòng thử lại.',
       })
     } finally {
       setIsSubmitting(false)
@@ -230,11 +230,11 @@ function RegisterPage() {
           >
             <Stack spacing={3} sx={{ maxWidth: 440, mt: { xs: 4, md: 8 } }}>
               <Typography variant="h2" component="h1" sx={{ color: '#FFFFFF', fontWeight: 700 }}>
-                Tham gia Cong dong Nha sang tao.
+                Tham gia Cộng đồng Nhà sáng tạo.
               </Typography>
               <Typography variant="h6" sx={{ color: 'rgba(255, 255, 255, 0.78)', lineHeight: 1.6 }}>
-                Mot he sinh thai chuyen nghiep duoc thiet ke de ket noi, minh bach va phat trien
-                ben vung. Bat dau hanh trinh cua ban voi InteractHub.
+                Một hệ sinh thái chuyên nghiệp được thiết kế để kết nối, minh bạch và phát triển
+                bền vững. Bắt đầu hành trình của bạn với InteractHub.
               </Typography>
             </Stack>
 
@@ -255,7 +255,7 @@ function RegisterPage() {
                   12k+
                 </Typography>
                 <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.78)' }}>
-                  Thanh vien
+                  Thành viên
                 </Typography>
               </Paper>
               <Paper
@@ -274,7 +274,7 @@ function RegisterPage() {
                   4.9/5
                 </Typography>
                 <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.78)' }}>
-                  Do tin cay
+                  Độ tin cậy
                 </Typography>
               </Paper>
             </Stack>
@@ -315,16 +315,16 @@ function RegisterPage() {
                     </Typography>
                   </Stack>
                   <Typography variant="h3" component="h2" sx={{ mt: 3, fontWeight: 700 }}>
-                    Tao tai khoan
+                    Tạo tài khoản
                   </Typography>
                   <Typography color="text.secondary">
-                    Nhap thong tin chi tiet de bat dau tham gia.
+                    Nhập thông tin chi tiết để bắt đầu tham gia.
                   </Typography>
                 </Stack>
 
                 <Stack spacing={2.5}>
                   <TextField
-                    label="Ho va ten"
+                    label="Họ và tên"
                     name="fullName"
                     value={form.fullName}
                     onChange={handleChange}
@@ -334,7 +334,7 @@ function RegisterPage() {
                     fullWidth
                   />
                   <TextField
-                    label="Dia chi email"
+                    label="Địa chỉ email"
                     name="email"
                     type="email"
                     value={form.email}
@@ -347,7 +347,7 @@ function RegisterPage() {
                   <Grid container spacing={2}>
                     <Grid size={{ xs: 12, sm: 6 }}>
                       <TextField
-                        label="Mat khau"
+                        label="Mật khẩu"
                         name="password"
                         type="password"
                         value={form.password}
@@ -360,7 +360,7 @@ function RegisterPage() {
                     </Grid>
                     <Grid size={{ xs: 12, sm: 6 }}>
                       <TextField
-                        label="Nhap lai mat khau"
+                        label="Nhập lại mật khẩu"
                         name="confirmPassword"
                         type="password"
                         value={form.confirmPassword}
@@ -404,13 +404,13 @@ function RegisterPage() {
                 </Stack>
 
                 <Button type="submit" size="large" variant="contained" disabled={isSubmitting} fullWidth>
-                  {isSubmitting ? 'Dang xu ly...' : 'Dang ky tai khoan'}
+                  {isSubmitting ? 'Đang xử lý...' : 'Đăng ký tài khoản'}
                 </Button>
 
                 <Typography textAlign="center" color="text.secondary">
-                  Da co tai khoan?{' '}
+                  Đã có tài khoản?{' '}
                   <Link component={RouterLink} to="/login" underline="hover" fontWeight={600}>
-                    Dang nhap tai day
+                    Đăng nhập tại đây
                   </Link>
                 </Typography>
               </Stack>
