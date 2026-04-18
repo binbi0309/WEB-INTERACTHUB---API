@@ -24,6 +24,7 @@ import SearchRoundedIcon from '@mui/icons-material/SearchRounded'
 import SendRoundedIcon from '@mui/icons-material/SendRounded'
 import TuneRoundedIcon from '@mui/icons-material/TuneRounded'
 import VideocamRoundedIcon from '@mui/icons-material/VideocamRounded'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 const trendingHashtags = [
   { id: 1, tag: '#AdaptiveAI', posts: '12K bài viết' },
@@ -62,12 +63,16 @@ const posts = [
 ]
 
 const desktopMenus = [
-  { id: 'home', label: 'Trang chủ', icon: <HomeRoundedIcon fontSize="small" />, active: true },
-  { id: 'friends', label: 'Bạn bè', icon: <PeopleRoundedIcon fontSize="small" /> },
-  { id: 'notifications', label: 'Thông báo', icon: <NotificationsNoneRoundedIcon fontSize="small" /> },
+  { id: 'home', label: 'Trang chủ', icon: <HomeRoundedIcon fontSize="small" />, path: '/' },
+  { id: 'friends', label: 'Bạn bè', icon: <PeopleRoundedIcon fontSize="small" />, path: '/friends' },
+  { id: 'notifications', label: 'Thông báo', icon: <NotificationsNoneRoundedIcon fontSize="small" />, path: '/notifications' },
 ]
 
 function HomePage() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const active = location.pathname
+
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: '#F4F6F8' }}>
       <Box
@@ -85,7 +90,18 @@ function HomePage() {
           zIndex: 10,
         }}
       >
-        <Typography variant="h6" sx={{ fontWeight: 700 }}>
+        <Typography
+          variant="h6"
+          component="button"
+          onClick={() => navigate('/')}
+          sx={{
+            fontWeight: 700,
+            border: 'none',
+            background: 'transparent',
+            cursor: 'pointer',
+            padding: 0,
+          }}
+        >
           InteractHub
         </Typography>
 
@@ -107,13 +123,15 @@ function HomePage() {
           <InputBase placeholder="Tìm kiếm..." sx={{ width: '100%' }} />
         </Paper>
 
-        <Stack direction="row" spacing={1}>
-          <IconButton size="small">
+        <Stack direction="row" spacing={1} alignItems="center">
+          <IconButton size="small" aria-label="Thông báo" onClick={() => navigate('/notifications')}>
             <Badge color="primary" variant="dot">
               <NotificationsNoneRoundedIcon />
             </Badge>
           </IconButton>
-          <Avatar sx={{ width: 34, height: 34 }}>T</Avatar>
+          <IconButton size="small" aria-label="Hồ sơ" onClick={() => navigate('/profile')}>
+            <Avatar sx={{ width: 34, height: 34 }}>T</Avatar>
+          </IconButton>
         </Stack>
       </Box>
 
@@ -126,10 +144,11 @@ function HomePage() {
                   <Button
                     key={item.id}
                     startIcon={item.icon}
+                    onClick={() => navigate(item.path)}
                     sx={{
                       justifyContent: 'flex-start',
-                      color: item.active ? 'primary.main' : 'text.secondary',
-                      fontWeight: item.active ? 700 : 500,
+                      color: active === item.path ? 'primary.main' : 'text.secondary',
+                      fontWeight: active === item.path ? 700 : 500,
                       borderRadius: 2,
                     }}
                   >

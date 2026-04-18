@@ -39,6 +39,12 @@ const recentFriendsSeed = [
   { id: 4, name: 'Liam Vance', role: 'Kiến trúc sư', connectedAt: '1 tuần trước' },
 ]
 
+const suggestionsSeed = [
+  { id: 101, name: 'Elena Rodriguez', role: 'Nhà thiết kế sản phẩm', mutualFriends: 18, requested: false },
+  { id: 102, name: 'Julian Chen', role: 'Kỹ sư Front-end', mutualFriends: 9, requested: false },
+  { id: 103, name: 'Sarah King', role: 'Quản lý vận hành', mutualFriends: 6, requested: false },
+]
+
 function FriendRequestCard({ request, onAccept, onReject }) {
   return (
     <Card sx={{ borderRadius: 3 }}>
@@ -74,6 +80,7 @@ function FriendsPage() {
   const [activeTab, setActiveTab] = useState('friends')
   const [friendRequests, setFriendRequests] = useState(friendRequestsSeed)
   const [recentFriends, setRecentFriends] = useState(recentFriendsSeed)
+  const [suggestions, setSuggestions] = useState(suggestionsSeed)
 
   const acceptedRequestsCount = useMemo(() => {
     return recentFriends.length - recentFriendsSeed.length + (friendRequestsSeed.length - friendRequests.length)
@@ -90,6 +97,12 @@ function FriendsPage() {
 
   const handleRejectRequest = (requestId) => {
     setFriendRequests((prev) => prev.filter((item) => item.id !== requestId))
+  }
+
+  const handleSendFriendRequest = (suggestionId) => {
+    setSuggestions((prev) =>
+      prev.map((item) => (item.id === suggestionId ? { ...item, requested: true } : item)),
+    )
   }
 
   return (
@@ -116,6 +129,13 @@ function FriendsPage() {
           variant={activeTab === 'requests' ? 'filled' : 'outlined'}
           onClick={() => setActiveTab('requests')}
         />
+        <Chip
+          label={`Gợi ý (${suggestions.filter((item) => !item.requested).length})`}
+          clickable
+          color={activeTab === 'suggestions' ? 'primary' : 'default'}
+          variant={activeTab === 'suggestions' ? 'filled' : 'outlined'}
+          onClick={() => setActiveTab('suggestions')}
+        />
       </Stack>
 
       <Box sx={{ mt: 2.5, display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '320px minmax(0, 1fr)' }, gap: 2.5 }}>
@@ -126,7 +146,7 @@ function FriendsPage() {
             </Typography>
             <Stack spacing={1.25} sx={{ mt: 1.5 }}>
               <Stack direction="row" justifyContent="space-between">
-                <Typography color="text.secondary">Tổng số bạn bè</Typography>
+                <Typography color="text.secondary">Tổng số bạn bè </Typography>
                 <Typography sx={{ fontWeight: 700 }}>{recentFriends.length}</Typography>
               </Stack>
               <Stack direction="row" justifyContent="space-between">
@@ -156,6 +176,44 @@ function FriendsPage() {
               <Card sx={{ borderRadius: 3 }}>
                 <CardContent>
                   <Typography color="text.secondary">Hiện không còn lời mời kết bạn nào.</Typography>
+                </CardContent>
+              </Card>
+            )
+          ) : activeTab === 'suggestions' ? (
+            suggestions.length > 0 ? (
+              suggestions.map((person) => (
+                <Card key={person.id} sx={{ borderRadius: 3 }}>
+                  <CardContent>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
+                      <Stack direction="row" spacing={1.5} alignItems="center">
+                        <Avatar>{person.name[0]}</Avatar>
+                        <Box>
+                          <Typography sx={{ fontWeight: 700 }}>{person.name}</Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {person.role}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {person.mutualFriends} bạn chung
+                          </Typography>
+                        </Box>
+                      </Stack>
+                      <Button
+                        size="small"
+                        variant={person.requested ? 'outlined' : 'contained'}
+                        color={person.requested ? 'inherit' : 'primary'}
+                        disabled={person.requested}
+                        onClick={() => handleSendFriendRequest(person.id)}
+                      >
+                        {person.requested ? 'Đã gửi' : 'Thêm bạn'}
+                      </Button>
+                    </Stack>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <Card sx={{ borderRadius: 3 }}>
+                <CardContent>
+                  <Typography color="text.secondary">Hiện chưa có gợi ý kết bạn nào.</Typography>
                 </CardContent>
               </Card>
             )

@@ -285,7 +285,7 @@ function MobileLoginPage() {
 
         <Typography textAlign="center" color="text.secondary">
           Chưa có tài khoản?{' '}
-          <Link component={RouterLink} to="/register" underline="hover" fontWeight={700}>
+          <Link component={RouterLink} to="/mobile/register" underline="hover" fontWeight={700}>
             Đăng ký ngay
           </Link>
         </Typography>

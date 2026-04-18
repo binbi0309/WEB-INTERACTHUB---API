@@ -55,7 +55,7 @@ const personalPosts = [
   },
 ]
 
-function DashboardPage() {
+function ProfilePage() {
   return (
     <Box sx={{ pb: 4 }}>
       <Paper sx={{ borderRadius: 4, overflow: 'hidden' }}>
@@ -186,4 +186,4 @@ function DashboardPage() {
   )
 }
 
-export default DashboardPage
+export default ProfilePage
