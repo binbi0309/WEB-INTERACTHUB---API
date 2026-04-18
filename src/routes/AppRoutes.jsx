@@ -1,6 +1,7 @@
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import AdminModerationPage from '../pages/PC/AdminModeration'
 import MainLayout from '../components/layout/MainLayout'
+import AdminHomePage from '../pages/PC/AdminHome'
 import ProfilePage from '../pages/PC/Profile'
 import FriendsPage from '../pages/PC/Friends'
 import HomePage from '../pages/PC/Home'
@@ -34,6 +35,7 @@ function AppRoutes() {
       <Route path="/mobile/login" element={<MobileLoginPage />} />
       <Route path="/mobile/register" element={<MobileRegisterPage />} />
       <Route element={<AppLayout />}>
+        <Route path="/admin/home" element={<AdminHomePage />} />
         <Route path="/admin/moderation" element={<AdminModerationPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/dashboard" element={<Navigate to="/profile" replace />} />
