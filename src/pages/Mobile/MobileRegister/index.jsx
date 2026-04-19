@@ -320,7 +320,7 @@ function MobileRegisterPage() {
 
         <Typography textAlign="center" color="text.secondary">
           Đã có tài khoản?{' '}
-          <Link component={RouterLink} to="/mobile/login" underline="hover" fontWeight={700}>
+          <Link component={RouterLink} to="/login" underline="hover" fontWeight={700}>
             Đăng nhập ngay
           </Link>
         </Typography>

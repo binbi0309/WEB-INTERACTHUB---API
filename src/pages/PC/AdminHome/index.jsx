@@ -64,7 +64,7 @@ const posts = [
 ]
 
 const desktopMenus = [
-  { id: 'home', label: 'Trang chủ', icon: <HomeRoundedIcon fontSize="small" />, path: '/' },
+  { id: 'home', label: 'Trang chủ', icon: <HomeRoundedIcon fontSize="small" />, path: '/home' },
   { id: 'friends', label: 'Bạn bè', icon: <PeopleRoundedIcon fontSize="small" />, path: '/friends' },
   { id: 'notifications', label: 'Thông báo', icon: <NotificationsNoneRoundedIcon fontSize="small" />, path: '/notifications' },
   { id: 'adminmoderation', label: 'Kiểm duyệt', icon: <GavelRoundedIcon fontSize="small" />, path: '/admin/moderation' },
@@ -95,7 +95,7 @@ function AdminHomePage() {
         <Typography
           variant="h6"
           component="button"
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/home')}
           sx={{
             fontWeight: 700,
             border: 'none',

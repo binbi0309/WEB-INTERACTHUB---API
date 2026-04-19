@@ -351,22 +351,22 @@ function MobileNotificationsPage() {
         <Stack
           alignItems="center"
           spacing={0.4}
-          onClick={() => navigate('/mobile/home')}
+          onClick={() => navigate('/home')}
           sx={{ cursor: 'pointer', userSelect: 'none' }}
         >
-          <HomeRoundedIcon fontSize="small" color={active === '/mobile/home' ? 'primary' : 'disabled'} />
-          <Typography variant="caption" color={active === '/mobile/home' ? 'primary' : 'text.secondary'}>
+          <HomeRoundedIcon fontSize="small" color={active === '/home' ? 'primary' : 'disabled'} />
+          <Typography variant="caption" color={active === '/home' ? 'primary' : 'text.secondary'}>
             Trang chủ
           </Typography>
         </Stack>
         <Stack
           alignItems="center"
           spacing={0.4}
-          onClick={() => navigate('/mobile/friends')}
+          onClick={() => navigate('/friends')}
           sx={{ cursor: 'pointer', userSelect: 'none' }}
         >
-          <PeopleRoundedIcon fontSize="small" color={active === '/mobile/friends' ? 'primary' : 'disabled'} />
-          <Typography variant="caption" color={active === '/mobile/friends' ? 'primary' : 'text.secondary'}>
+          <PeopleRoundedIcon fontSize="small" color={active === '/friends' ? 'primary' : 'disabled'} />
+          <Typography variant="caption" color={active === '/friends' ? 'primary' : 'text.secondary'}>
             Bạn bè
           </Typography>
         </Stack>
@@ -385,24 +385,24 @@ function MobileNotificationsPage() {
         <Stack
           alignItems="center"
           spacing={0.4}
-          onClick={() => navigate('/mobile/notifications')}
+          onClick={() => navigate('/notifications')}
           sx={{ cursor: 'pointer', userSelect: 'none' }}
         >
           <Badge color="primary" variant={hasUnread ? 'dot' : 'standard'} overlap="circular">
-            <NotificationsNoneRoundedIcon fontSize="small" color={active === '/mobile/notifications' ? 'primary' : 'disabled'} />
+            <NotificationsNoneRoundedIcon fontSize="small" color={active === '/notifications' ? 'primary' : 'disabled'} />
           </Badge>
-          <Typography variant="caption" color={active === '/mobile/notifications' ? 'primary' : 'text.secondary'}>
+          <Typography variant="caption" color={active === '/notifications' ? 'primary' : 'text.secondary'}>
             Thông báo
           </Typography>
         </Stack>
         <Stack
           alignItems="center"
           spacing={0.4}
-          onClick={() => navigate('/mobile/profile')}
+          onClick={() => navigate('/profile')}
           sx={{ cursor: 'pointer', userSelect: 'none' }}
         >
-          <PersonRoundedIcon fontSize="small" color={active === '/mobile/profile' ? 'primary' : 'disabled'} />
-          <Typography variant="caption" color={active === '/mobile/profile' ? 'primary' : 'text.secondary'}>
+          <PersonRoundedIcon fontSize="small" color={active === '/profile' ? 'primary' : 'disabled'} />
+          <Typography variant="caption" color={active === '/profile' ? 'primary' : 'text.secondary'}>
             Hồ sơ
           </Typography>
         </Stack>

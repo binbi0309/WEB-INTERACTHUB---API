@@ -26,7 +26,7 @@ function MainLayout({ children }) {
           <Typography
             variant="h6"
             component="button"
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/home')}
             sx={{
               flexGrow: 1,
               border: 'none',
@@ -45,8 +45,8 @@ function MainLayout({ children }) {
             <IconButton
               size="small"
               aria-label="Trang chủ"
-              onClick={() => navigate('/')}
-              color={active === '/' ? 'inherit' : 'default'}
+              onClick={() => navigate('/home')}
+              color={active === '/home' ? 'inherit' : 'default'}
             >
               <HomeRoundedIcon fontSize="small" />
             </IconButton>
