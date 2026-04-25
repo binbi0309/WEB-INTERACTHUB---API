@@ -2,6 +2,7 @@ import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import AdminModerationPage from '../pages/PC/AdminModeration'
 import MainLayout from '../components/layout/MainLayout'
 import AdminHomePage from '../pages/PC/AdminHome'
+import { useAuthSession } from '../features/auth/hooks/useAuthSession'
 import {
   ResponsiveFriends,
   ResponsiveHome,
@@ -11,6 +12,20 @@ import {
   ResponsiveProfile,
   ResponsiveRegister,
 } from './responsivePages'
+
+function ProtectedRoute({ children }) {
+  const { data: session, isLoading } = useAuthSession()
+
+  if (isLoading) {
+    return null
+  }
+
+  if (!session) {
+    return <Navigate to="/login" replace />
+  }
+
+  return children
+}
 
 function AppLayout() {
   return (
@@ -23,11 +38,39 @@ function AppLayout() {
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/home" element={<ResponsiveHome />} />
+      <Route
+        path="/home"
+        element={
+          <ProtectedRoute>
+            <ResponsiveHome />
+          </ProtectedRoute>
+        }
+      />
       <Route path="/" element={<Navigate to="/home" replace />} />
-      <Route path="/friends" element={<ResponsiveFriends />} />
-      <Route path="/notifications" element={<ResponsiveNotifications />} />
-      <Route path="/profile" element={<ResponsiveProfile />} />
+      <Route
+        path="/friends"
+        element={
+          <ProtectedRoute>
+            <ResponsiveFriends />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/notifications"
+        element={
+          <ProtectedRoute>
+            <ResponsiveNotifications />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <ResponsiveProfile />
+          </ProtectedRoute>
+        }
+      />
       <Route path="/login" element={<ResponsiveLogin />} />
       <Route path="/register" element={<ResponsiveRegister />} />
       <Route path="/404" element={<ResponsiveNotFound />} />
@@ -40,7 +83,13 @@ function AppRoutes() {
       <Route path="/mobile/register" element={<Navigate to="/register" replace />} />
 
       {/* Chỉ admin: luôn MainLayout + giao diện PC (không tách mobile). */}
-      <Route element={<AppLayout />}>
+      <Route
+        element={
+          <ProtectedRoute>
+            <AppLayout />
+          </ProtectedRoute>
+        }
+      >
         <Route path="/admin/home" element={<AdminHomePage />} />
         <Route path="/admin/moderation" element={<AdminModerationPage />} />
         <Route path="/dashboard" element={<Navigate to="/profile" replace />} />
