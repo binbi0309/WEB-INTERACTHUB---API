@@ -21,6 +21,8 @@ import RadioButtonUncheckedRoundedIcon from '@mui/icons-material/RadioButtonUnch
 import VisibilityOffRoundedIcon from '@mui/icons-material/VisibilityOffRounded'
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded'
 import { Link as RouterLink } from 'react-router-dom'
+import { useRegisterMutation } from '../../../features/auth/hooks/useAuthMutations'
+import { getApiErrorMessage } from '../../../features/auth/authErrors'
 
 const initialForm = {
   fullName: '',
@@ -78,7 +80,7 @@ function MobileRegisterPage() {
   const [touched, setTouched] = useState(initialTouched)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const registerMutation = useRegisterMutation()
   const [notification, setNotification] = useState({
     open: false,
     severity: 'success',
@@ -127,22 +129,16 @@ function MobileRegisterPage() {
       return
     }
 
-    setIsSubmitting(true)
     try {
-      await new Promise((resolve, reject) => {
-        setTimeout(() => {
-          if (form.email.toLowerCase().includes('fail') || form.email.toLowerCase().includes('exists')) {
-            reject(new Error('Email này đã tồn tại hoặc không thể đăng ký.'))
-            return
-          }
-          resolve()
-        }, 900)
+      await registerMutation.mutateAsync({
+        email: form.email,
+        password: form.password,
       })
 
       setNotification({
         open: true,
         severity: 'success',
-        message: 'Đăng ký thành công. Vui lòng kiểm tra hộp thư để xác minh email.',
+        message: 'Đăng ký thành công. Bạn có thể đăng nhập ngay.',
       })
       setForm(initialForm)
       setTouched(initialTouched)
@@ -150,10 +146,8 @@ function MobileRegisterPage() {
       setNotification({
         open: true,
         severity: 'error',
-        message: error.message || 'Đăng ký thất bại. Vui lòng thử lại.',
+        message: getApiErrorMessage(error, 'Đăng ký thất bại. Vui lòng thử lại.'),
       })
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
@@ -312,8 +306,8 @@ function MobileRegisterPage() {
               ))}
             </Stack>
 
-            <Button type="submit" fullWidth size="large" variant="contained" disabled={isSubmitting} sx={{ borderRadius: 3, py: 1.25 }}>
-              {isSubmitting ? 'Đang xử lý...' : 'Đăng ký'}
+            <Button type="submit" fullWidth size="large" variant="contained" disabled={registerMutation.isPending} sx={{ borderRadius: 3, py: 1.25 }}>
+              {registerMutation.isPending ? 'Đang xử lý...' : 'Đăng ký'}
             </Button>
           </Stack>
         </Paper>

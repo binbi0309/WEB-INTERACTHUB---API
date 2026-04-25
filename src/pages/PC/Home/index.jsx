@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import Avatar from '@mui/material/Avatar'
 import Badge from '@mui/material/Badge'
+import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
@@ -9,7 +11,11 @@ import Chip from '@mui/material/Chip'
 import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
 import InputBase from '@mui/material/InputBase'
+import ListItemIcon from '@mui/material/ListItemIcon'
+import Menu from '@mui/material/Menu'
+import MenuItem from '@mui/material/MenuItem'
 import Paper from '@mui/material/Paper'
+import Snackbar from '@mui/material/Snackbar'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import BookmarkBorderRoundedIcon from '@mui/icons-material/BookmarkBorderRounded'
@@ -20,11 +26,15 @@ import InsertPhotoRoundedIcon from '@mui/icons-material/InsertPhotoRounded'
 import MoreHorizRoundedIcon from '@mui/icons-material/MoreHorizRounded'
 import NotificationsNoneRoundedIcon from '@mui/icons-material/NotificationsNoneRounded'
 import PeopleRoundedIcon from '@mui/icons-material/PeopleRounded'
+import PersonRoundedIcon from '@mui/icons-material/PersonRounded'
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded'
+import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded'
 import SendRoundedIcon from '@mui/icons-material/SendRounded'
 import TuneRoundedIcon from '@mui/icons-material/TuneRounded'
 import VideocamRoundedIcon from '@mui/icons-material/VideocamRounded'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useLogoutMutation } from '../../../features/auth/hooks/useAuthMutations'
+import { getApiErrorMessage } from '../../../features/auth/authErrors'
 
 const trendingHashtags = [
   { id: 1, tag: '#AdaptiveAI', posts: '12K bài viết' },
@@ -72,6 +82,53 @@ function HomePage() {
   const navigate = useNavigate()
   const location = useLocation()
   const active = location.pathname
+  const logoutMutation = useLogoutMutation()
+  const [notification, setNotification] = useState({
+    open: false,
+    severity: 'error',
+    message: '',
+  })
+  const [avatarMenuAnchor, setAvatarMenuAnchor] = useState(null)
+  const isAvatarMenuOpen = Boolean(avatarMenuAnchor)
+
+  const handleCloseNotification = (_, reason) => {
+    if (reason === 'clickaway') {
+      return
+    }
+
+    setNotification((prev) => ({
+      ...prev,
+      open: false,
+    }))
+  }
+
+  const handleLogout = async () => {
+    setAvatarMenuAnchor(null)
+
+    try {
+      await logoutMutation.mutateAsync()
+      navigate('/login', { replace: true })
+    } catch (error) {
+      setNotification({
+        open: true,
+        severity: 'error',
+        message: getApiErrorMessage(error, 'Đăng xuất thất bại. Vui lòng thử lại.'),
+      })
+    }
+  }
+
+  const handleOpenAvatarMenu = (event) => {
+    setAvatarMenuAnchor(event.currentTarget)
+  }
+
+  const handleCloseAvatarMenu = () => {
+    setAvatarMenuAnchor(null)
+  }
+
+  const handleGoToProfile = () => {
+    setAvatarMenuAnchor(null)
+    navigate('/profile')
+  }
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: '#F4F6F8' }}>
@@ -129,11 +186,49 @@ function HomePage() {
               <NotificationsNoneRoundedIcon />
             </Badge>
           </IconButton>
-          <IconButton size="small" aria-label="Hồ sơ" onClick={() => navigate('/profile')}>
+          <IconButton
+            size="small"
+            aria-label="Mở menu tài khoản"
+            onClick={handleOpenAvatarMenu}
+            aria-controls={isAvatarMenuOpen ? 'avatar-menu' : undefined}
+            aria-haspopup="menu"
+            aria-expanded={isAvatarMenuOpen ? 'true' : undefined}
+          >
             <Avatar sx={{ width: 34, height: 34 }}>T</Avatar>
           </IconButton>
         </Stack>
       </Box>
+
+      <Menu
+        id="avatar-menu"
+        anchorEl={avatarMenuAnchor}
+        open={isAvatarMenuOpen}
+        onClose={handleCloseAvatarMenu}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        PaperProps={{
+          sx: {
+            mt: 1,
+            minWidth: 200,
+            borderRadius: 2.5,
+            border: '1px solid',
+            borderColor: 'divider',
+          },
+        }}
+      >
+        <MenuItem onClick={handleGoToProfile}>
+          <ListItemIcon>
+            <PersonRoundedIcon fontSize="small" />
+          </ListItemIcon>
+          Xem hồ sơ
+        </MenuItem>
+        <MenuItem onClick={handleLogout} disabled={logoutMutation.isPending}>
+          <ListItemIcon>
+            <LogoutRoundedIcon fontSize="small" />
+          </ListItemIcon>
+          {logoutMutation.isPending ? 'Đang đăng xuất...' : 'Đăng xuất'}
+        </MenuItem>
+      </Menu>
 
       <Box sx={{ px: { xs: 2, md: 4 }, py: 3 }}>
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '220px minmax(0, 1fr) 300px' }, gap: 3 }}>
@@ -285,6 +380,17 @@ function HomePage() {
           </Stack>
         </Box>
       </Box>
+
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={3500}
+        onClose={handleCloseNotification}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseNotification} severity={notification.severity} variant="filled">
+          {notification.message}
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }

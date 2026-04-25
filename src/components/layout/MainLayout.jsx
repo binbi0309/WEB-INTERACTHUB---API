@@ -1,22 +1,58 @@
 import AppBar from '@mui/material/AppBar'
+import Alert from '@mui/material/Alert'
 import Avatar from '@mui/material/Avatar'
 import Badge from '@mui/material/Badge'
 import Box from '@mui/material/Box'
 import Container from '@mui/material/Container'
 import CssBaseline from '@mui/material/CssBaseline'
 import IconButton from '@mui/material/IconButton'
+import Snackbar from '@mui/material/Snackbar'
 import Stack from '@mui/material/Stack'
 import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
 import NotificationsNoneRoundedIcon from '@mui/icons-material/NotificationsNoneRounded'
 import PeopleRoundedIcon from '@mui/icons-material/PeopleRounded'
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded'
+import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded'
+import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useLogoutMutation } from '../../features/auth/hooks/useAuthMutations'
+import { getApiErrorMessage } from '../../features/auth/authErrors'
 
 function MainLayout({ children }) {
   const navigate = useNavigate()
   const location = useLocation()
   const active = location.pathname
+  const logoutMutation = useLogoutMutation()
+  const [notification, setNotification] = useState({
+    open: false,
+    severity: 'error',
+    message: '',
+  })
+
+  const handleCloseNotification = (_, reason) => {
+    if (reason === 'clickaway') {
+      return
+    }
+
+    setNotification((prev) => ({
+      ...prev,
+      open: false,
+    }))
+  }
+
+  const handleLogout = async () => {
+    try {
+      await logoutMutation.mutateAsync()
+      navigate('/login', { replace: true })
+    } catch (error) {
+      setNotification({
+        open: true,
+        severity: 'error',
+        message: getApiErrorMessage(error, 'Đăng xuất thất bại. Vui lòng thử lại.'),
+      })
+    }
+  }
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
@@ -71,11 +107,30 @@ function MainLayout({ children }) {
             <IconButton size="small" aria-label="Hồ sơ" onClick={() => navigate('/profile')}>
               <Avatar sx={{ width: 30, height: 30 }}>T</Avatar>
             </IconButton>
+            <IconButton
+              size="small"
+              aria-label="Đăng xuất"
+              onClick={handleLogout}
+              disabled={logoutMutation.isPending}
+            >
+              <LogoutRoundedIcon fontSize="small" />
+            </IconButton>
           </Stack>
         </Toolbar>
       </AppBar>
 
       <Container sx={{ py: 4 }}>{children}</Container>
+
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={3500}
+        onClose={handleCloseNotification}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseNotification} severity={notification.severity} variant="filled">
+          {notification.message}
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }

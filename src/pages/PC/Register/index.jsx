@@ -14,6 +14,8 @@ import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded'
 import RadioButtonUncheckedRoundedIcon from '@mui/icons-material/RadioButtonUncheckedRounded'
 import ErrorRoundedIcon from '@mui/icons-material/ErrorRounded'
 import { Link as RouterLink } from 'react-router-dom'
+import { useRegisterMutation } from '../../../features/auth/hooks/useAuthMutations'
+import { getApiErrorMessage } from '../../../features/auth/authErrors'
 
 const initialForm = {
   fullName: '',
@@ -99,7 +101,7 @@ function getPasswordChecks(password, confirmPassword) {
 function RegisterPage() {
   const [form, setForm] = useState(initialForm)
   const [touched, setTouched] = useState(initialTouched)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const registerMutation = useRegisterMutation()
   const [notification, setNotification] = useState({
     open: false,
     severity: 'success',
@@ -172,24 +174,16 @@ function RegisterPage() {
       return
     }
 
-    setIsSubmitting(true)
-
     try {
-      await new Promise((resolve, reject) => {
-        setTimeout(() => {
-          if (form.email.toLowerCase().includes('fail') || form.email.toLowerCase().includes('exists')) {
-            reject(new Error('Email này đã tồn tại hoặc không thể đăng ký.'))
-            return
-          }
-
-          resolve()
-        }, 900)
+      await registerMutation.mutateAsync({
+        email: form.email,
+        password: form.password,
       })
 
       setNotification({
         open: true,
         severity: 'success',
-        message: 'Đăng ký thành công. Vui lòng kiểm tra hộp thư để xác minh email.',
+        message: 'Đăng ký thành công. Bạn có thể đăng nhập ngay.',
       })
       setForm(initialForm)
       setTouched(initialTouched)
@@ -197,10 +191,8 @@ function RegisterPage() {
       setNotification({
         open: true,
         severity: 'error',
-        message: error.message || 'Đăng ký thất bại. Vui lòng thử lại.',
+        message: getApiErrorMessage(error, 'Đăng ký thất bại. Vui lòng thử lại.'),
       })
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
@@ -403,8 +395,8 @@ function RegisterPage() {
                   </Stack>
                 </Stack>
 
-                <Button type="submit" size="large" variant="contained" disabled={isSubmitting} fullWidth>
-                  {isSubmitting ? 'Đang xử lý...' : 'Đăng ký tài khoản'}
+                <Button type="submit" size="large" variant="contained" disabled={registerMutation.isPending} fullWidth>
+                  {registerMutation.isPending ? 'Đang xử lý...' : 'Đăng ký tài khoản'}
                 </Button>
 
                 <Typography textAlign="center" color="text.secondary">

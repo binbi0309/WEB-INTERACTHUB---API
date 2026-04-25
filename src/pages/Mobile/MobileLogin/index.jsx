@@ -16,7 +16,9 @@ import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import VisibilityOffRoundedIcon from '@mui/icons-material/VisibilityOffRounded'
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded'
-import { Link as RouterLink } from 'react-router-dom'
+import { Link as RouterLink, useNavigate } from 'react-router-dom'
+import { useLoginMutation } from '../../../features/auth/hooks/useAuthMutations'
+import { getApiErrorMessage } from '../../../features/auth/authErrors'
 
 const initialForm = {
   email: '',
@@ -53,9 +55,10 @@ function MobileLoginPage() {
   const [form, setForm] = useState(initialForm)
   const [touched, setTouched] = useState(initialTouched)
   const [showPassword, setShowPassword] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [isForgotOpen, setIsForgotOpen] = useState(false)
   const [forgotEmail, setForgotEmail] = useState('')
+  const loginMutation = useLoginMutation()
+  const navigate = useNavigate()
   const [notification, setNotification] = useState({
     open: false,
     severity: 'error',
@@ -123,20 +126,10 @@ function MobileLoginPage() {
       return
     }
 
-    setIsSubmitting(true)
-
     try {
-      await new Promise((resolve, reject) => {
-        setTimeout(() => {
-          const wrongEmail = form.email.toLowerCase().includes('wrong')
-          const wrongPassword = form.password !== '12345678'
-          if (wrongEmail || wrongPassword) {
-            reject(new Error('Email hoặc mật khẩu không chính xác.'))
-            return
-          }
-
-          resolve()
-        }, 800)
+      await loginMutation.mutateAsync({
+        email: form.email,
+        password: form.password,
       })
 
       setNotification({
@@ -146,14 +139,13 @@ function MobileLoginPage() {
       })
       setForm(initialForm)
       setTouched(initialTouched)
+      navigate('/home', { replace: true })
     } catch (error) {
       setNotification({
         open: true,
         severity: 'error',
-        message: error.message || 'Đăng nhập thất bại. Vui lòng thử lại.',
+        message: getApiErrorMessage(error, 'Đăng nhập thất bại. Vui lòng thử lại.'),
       })
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
@@ -275,10 +267,10 @@ function MobileLoginPage() {
               fullWidth
               size="large"
               variant="contained"
-              disabled={isSubmitting}
+              disabled={loginMutation.isPending}
               sx={{ borderRadius: 3, py: 1.25 }}
             >
-              {isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
+              {loginMutation.isPending ? 'Đang đăng nhập...' : 'Đăng nhập'}
             </Button>
           </Stack>
         </Paper>

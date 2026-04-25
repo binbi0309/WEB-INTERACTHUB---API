@@ -8,12 +8,15 @@ import CardMedia from '@mui/material/CardMedia'
 import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
 import Paper from '@mui/material/Paper'
+import Snackbar from '@mui/material/Snackbar'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
+import Alert from '@mui/material/Alert'
 import AddRoundedIcon from '@mui/icons-material/AddRounded'
 import ChatBubbleOutlineRoundedIcon from '@mui/icons-material/ChatBubbleOutlineRounded'
 import FavoriteBorderRoundedIcon from '@mui/icons-material/FavoriteBorderRounded'
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded'
+import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded'
 import ModeEditOutlineRoundedIcon from '@mui/icons-material/ModeEditOutlineRounded'
 import NotificationsNoneRoundedIcon from '@mui/icons-material/NotificationsNoneRounded'
 import PeopleRoundedIcon from '@mui/icons-material/PeopleRounded'
@@ -21,6 +24,8 @@ import PersonRoundedIcon from '@mui/icons-material/PersonRounded'
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded'
 import ShareRoundedIcon from '@mui/icons-material/ShareRounded'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useLogoutMutation } from '../../../features/auth/hooks/useAuthMutations'
+import { getApiErrorMessage } from '../../../features/auth/authErrors'
 
 const profile = {
   name: 'Hoàng Nam',
@@ -198,11 +203,41 @@ function MobileProfilePage() {
   const active = location.pathname
 
   const [activeTab, setActiveTab] = useState('posts')
+  const logoutMutation = useLogoutMutation()
+  const [notification, setNotification] = useState({
+    open: false,
+    severity: 'error',
+    message: '',
+  })
 
   const visiblePosts = useMemo(() => {
     if (activeTab !== 'posts') return []
     return personalPosts
   }, [activeTab])
+
+  const handleCloseNotification = (_, reason) => {
+    if (reason === 'clickaway') {
+      return
+    }
+
+    setNotification((prev) => ({
+      ...prev,
+      open: false,
+    }))
+  }
+
+  const handleLogout = async () => {
+    try {
+      await logoutMutation.mutateAsync()
+      navigate('/login', { replace: true })
+    } catch (error) {
+      setNotification({
+        open: true,
+        severity: 'error',
+        message: getApiErrorMessage(error, 'Đăng xuất thất bại. Vui lòng thử lại.'),
+      })
+    }
+  }
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: '#F3F4F6', pb: 10 }}>
@@ -223,9 +258,19 @@ function MobileProfilePage() {
             <Avatar sx={{ width: 28, height: 28, bgcolor: 'primary.main' }}>I</Avatar>
             <Typography sx={{ fontWeight: 700, fontSize: 22 }}>InteractHub</Typography>
           </Stack>
-          <IconButton size="small" aria-label="Tìm kiếm">
-            <SearchRoundedIcon fontSize="small" />
-          </IconButton>
+          <Stack direction="row" spacing={0.5} alignItems="center">
+            <IconButton size="small" aria-label="Tìm kiếm">
+              <SearchRoundedIcon fontSize="small" />
+            </IconButton>
+            <IconButton
+              size="small"
+              aria-label="Đăng xuất"
+              onClick={handleLogout}
+              disabled={logoutMutation.isPending}
+            >
+              <LogoutRoundedIcon fontSize="small" />
+            </IconButton>
+          </Stack>
         </Stack>
       </Box>
 
@@ -389,6 +434,17 @@ function MobileProfilePage() {
           </Typography>
         </Stack>
       </Paper>
+
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={3500}
+        onClose={handleCloseNotification}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseNotification} severity={notification.severity} variant="filled">
+          {notification.message}
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }
