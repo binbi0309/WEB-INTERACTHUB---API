@@ -1,72 +1,68 @@
 import { useMemo, useState } from 'react'
+import Alert from '@mui/material/Alert'
 import Avatar from '@mui/material/Avatar'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Chip from '@mui/material/Chip'
+import CircularProgress from '@mui/material/CircularProgress'
+import Snackbar from '@mui/material/Snackbar'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
+import { getApiErrorMessage } from '../../../features/auth/authErrors'
+import {
+  useAcceptFriendRequestMutation,
+  useRejectFriendRequestMutation,
+  useSendFriendRequestMutation,
+} from '../../../features/friends/hooks/useFriendMutations'
+import {
+  useFriendsActiveUsersQuery,
+  useFriendsMyProfileQuery,
+  useFriendProfilesQuery,
+  useMyFriendsQuery,
+  usePendingReceivedRequestsQuery,
+  usePendingSentRequestsQuery,
+} from '../../../features/friends/hooks/useFriendQueries'
 
-const friendRequestsSeed = [
-  {
-    id: 1,
-    name: 'Elena Rodriguez',
-    role: 'Nhà thiết kế sản phẩm',
-    mutualFriends: 18,
-    time: '2 giờ trước',
-  },
-  {
-    id: 2,
-    name: 'Julian Chen',
-    role: 'Kỹ sư Front-end',
-    mutualFriends: 9,
-    time: '1 ngày trước',
-  },
-  {
-    id: 3,
-    name: 'Sarah King',
-    role: 'Quản lý vận hành',
-    mutualFriends: 6,
-    time: '3 ngày trước',
-  },
-]
+const EMPTY_LIST = []
 
-const recentFriendsSeed = [
-  { id: 1, name: 'Marcus Sterling', role: 'Kiến trúc sư sản phẩm số', connectedAt: 'Vừa kết bạn' },
-  { id: 2, name: 'Amara Kojo', role: 'Quản lý sản phẩm', connectedAt: '2 ngày trước' },
-  { id: 3, name: 'Soren West', role: 'Giám đốc sáng tạo', connectedAt: '4 ngày trước' },
-  { id: 4, name: 'Liam Vance', role: 'Kiến trúc sư', connectedAt: '1 tuần trước' },
-]
+function getRelativeTimeLabel(value) {
+  if (!value) return 'Vừa cập nhật'
 
-const suggestionsSeed = [
-  { id: 101, name: 'Elena Rodriguez', role: 'Nhà thiết kế sản phẩm', mutualFriends: 18, requested: false },
-  { id: 102, name: 'Julian Chen', role: 'Kỹ sư Front-end', mutualFriends: 9, requested: false },
-  { id: 103, name: 'Sarah King', role: 'Quản lý vận hành', mutualFriends: 6, requested: false },
-]
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'Vừa cập nhật'
 
-function FriendRequestCard({ request, onAccept, onReject }) {
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
+  if (seconds < 60) return 'Vừa xong'
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} phút trước`
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)} giờ trước`
+  if (seconds < 604800) return `${Math.floor(seconds / 86400)} ngày trước`
+  return date.toLocaleDateString('vi-VN')
+}
+
+function FriendRequestCard({ request, onAccept, onReject, disabled }) {
   return (
     <Card sx={{ borderRadius: 3 }}>
       <CardContent>
-        <Stack direction="row" justifyContent="space-between" spacing={2}>
+        <Stack direction="row" justifyContent="space-between" spacing={40}>
           <Stack direction="row" spacing={1.5} alignItems="center">
-            <Avatar>{request.name[0]}</Avatar>
+            <Avatar src={request.avatarUrl || undefined}>{request.name?.[0] ?? '?'}</Avatar>
             <Box>
               <Typography sx={{ fontWeight: 700 }}>{request.name}</Typography>
               <Typography variant="body2" color="text.secondary">
-                {request.role}
+                {request.email}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                {request.mutualFriends} bạn chung • {request.time}
+                {request.time}
               </Typography>
             </Box>
           </Stack>
-          <Stack direction="row" spacing={1}>
-            <Button size="small" variant="contained" onClick={() => onAccept(request.id)}>
+          <Stack direction="row" spacing={1} >
+            <Button size="small" variant="contained" disabled={disabled} onClick={() => onAccept(request.id)}>
               Chấp nhận
             </Button>
-            <Button size="small" variant="outlined" color="inherit" onClick={() => onReject(request.id)}>
+            <Button size="small" variant="outlined" color="inherit" disabled={disabled} onClick={() => onReject(request.id)}>
               Từ chối
             </Button>
           </Stack>
@@ -78,31 +74,127 @@ function FriendRequestCard({ request, onAccept, onReject }) {
 
 function FriendsPage() {
   const [activeTab, setActiveTab] = useState('friends')
-  const [friendRequests, setFriendRequests] = useState(friendRequestsSeed)
-  const [recentFriends, setRecentFriends] = useState(recentFriendsSeed)
-  const [suggestions, setSuggestions] = useState(suggestionsSeed)
+  const [notification, setNotification] = useState({
+    open: false,
+    severity: 'success',
+    message: '',
+  })
 
-  const acceptedRequestsCount = useMemo(() => {
-    return recentFriends.length - recentFriendsSeed.length + (friendRequestsSeed.length - friendRequests.length)
-  }, [friendRequests.length, recentFriends.length])
+  const friendsQuery = useMyFriendsQuery()
+  const pendingReceivedQuery = usePendingReceivedRequestsQuery()
+  const pendingSentQuery = usePendingSentRequestsQuery()
+  const activeUsersQuery = useFriendsActiveUsersQuery()
+  const myProfileQuery = useFriendsMyProfileQuery()
 
-  const handleAcceptRequest = (requestId) => {
-    const accepted = friendRequests.find((item) => item.id === requestId)
-    if (!accepted) return
+  const sendRequestMutation = useSendFriendRequestMutation()
+  const acceptRequestMutation = useAcceptFriendRequestMutation()
+  const rejectRequestMutation = useRejectFriendRequestMutation()
 
-    setRecentFriends((prev) => [{ id: Date.now(), name: accepted.name, role: accepted.role, connectedAt: 'Vừa kết bạn' }, ...prev])
-    setFriendRequests((prev) => prev.filter((item) => item.id !== requestId))
-    setActiveTab('friends')
+  const myProfile = myProfileQuery.data?.data
+  const friends = friendsQuery.data?.data ?? EMPTY_LIST
+  const pendingReceived = pendingReceivedQuery.data?.data ?? EMPTY_LIST
+  const pendingSent = pendingSentQuery.data?.data ?? EMPTY_LIST
+  const activeUsers = activeUsersQuery.data?.data ?? EMPTY_LIST
+
+  const pendingSentUserIdSet = useMemo(
+    () => new Set(pendingSent.map((request) => request.addresseeId)),
+    [pendingSent],
+  )
+  const pendingReceivedUserIdSet = useMemo(
+    () => new Set(pendingReceived.map((request) => request.requesterId)),
+    [pendingReceived],
+  )
+  const friendUserIdSet = useMemo(() => new Set(friends.map((friend) => friend.userId)), [friends])
+
+  const suggestions = useMemo(
+    () =>
+      activeUsers
+        .filter((user) => user.id !== myProfile?.userId)
+        .filter((user) => !friendUserIdSet.has(user.id))
+        .filter((user) => !pendingReceivedUserIdSet.has(user.id))
+        .map((user) => ({
+          id: user.id,
+          name: `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.emailId,
+          email: user.emailId,
+          requested: pendingSentUserIdSet.has(user.id),
+        })),
+    [activeUsers, friendUserIdSet, myProfile?.userId, pendingReceivedUserIdSet, pendingSentUserIdSet],
+  )
+
+  const profileUserIds = useMemo(
+    () => [
+      ...friends.map((friend) => friend.userId),
+      ...pendingReceived.map((request) => request.requesterId),
+      ...suggestions.map((user) => user.id),
+    ],
+    [friends, pendingReceived, suggestions],
+  )
+  const profileQueries = useFriendProfilesQuery(profileUserIds)
+  const profileMap = useMemo(() => {
+    return profileQueries.reduce((acc, query) => {
+      const userId = query.data?.data?.userId
+      if (userId) {
+        acc.set(userId, query.data?.data)
+      }
+      return acc
+    }, new Map())
+  }, [profileQueries])
+
+  const isLoading =
+    friendsQuery.isLoading ||
+    pendingReceivedQuery.isLoading ||
+    pendingSentQuery.isLoading ||
+    activeUsersQuery.isLoading ||
+    myProfileQuery.isLoading
+  const isMutating =
+    sendRequestMutation.isPending || acceptRequestMutation.isPending || rejectRequestMutation.isPending
+  const hasLoadError =
+    friendsQuery.isError ||
+    pendingReceivedQuery.isError ||
+    pendingSentQuery.isError ||
+    activeUsersQuery.isError ||
+    myProfileQuery.isError
+  const loadError =
+    friendsQuery.error ||
+    pendingReceivedQuery.error ||
+    pendingSentQuery.error ||
+    activeUsersQuery.error ||
+    myProfileQuery.error
+
+  const showNotification = (severity, message) => {
+    setNotification({
+      open: true,
+      severity,
+      message,
+    })
   }
 
-  const handleRejectRequest = (requestId) => {
-    setFriendRequests((prev) => prev.filter((item) => item.id !== requestId))
+  const handleAcceptRequest = async (requestId) => {
+    try {
+      await acceptRequestMutation.mutateAsync(requestId)
+      setActiveTab('friends')
+      showNotification('success', 'Chấp nhận lời mời kết bạn thành công.')
+    } catch (error) {
+      showNotification('error', getApiErrorMessage(error, 'Không thể chấp nhận lời mời kết bạn.'))
+    }
   }
 
-  const handleSendFriendRequest = (suggestionId) => {
-    setSuggestions((prev) =>
-      prev.map((item) => (item.id === suggestionId ? { ...item, requested: true } : item)),
-    )
+  const handleRejectRequest = async (requestId) => {
+    try {
+      await rejectRequestMutation.mutateAsync(requestId)
+      showNotification('success', 'Đã từ chối lời mời kết bạn.')
+    } catch (error) {
+      showNotification('error', getApiErrorMessage(error, 'Không thể từ chối lời mời kết bạn.'))
+    }
+  }
+
+  const handleSendFriendRequest = async (targetUserId) => {
+    try {
+      await sendRequestMutation.mutateAsync(targetUserId)
+      showNotification('success', 'Gửi lời mời kết bạn thành công.')
+    } catch (error) {
+      showNotification('error', getApiErrorMessage(error, 'Không thể gửi lời mời kết bạn.'))
+    }
   }
 
   return (
@@ -116,14 +208,14 @@ function FriendsPage() {
 
       <Stack direction="row" spacing={1} sx={{ mt: 2.5 }}>
         <Chip
-          label={`Bạn bè (${recentFriends.length})`}
+          label={`Bạn bè (${friends.length})`}
           clickable
           color={activeTab === 'friends' ? 'primary' : 'default'}
           variant={activeTab === 'friends' ? 'filled' : 'outlined'}
           onClick={() => setActiveTab('friends')}
         />
         <Chip
-          label={`Lời mời (${friendRequests.length})`}
+          label={`Lời mời (${pendingReceived.length})`}
           clickable
           color={activeTab === 'requests' ? 'primary' : 'default'}
           variant={activeTab === 'requests' ? 'filled' : 'outlined'}
@@ -145,37 +237,57 @@ function FriendsPage() {
               Tổng quan kết nối
             </Typography>
             <Stack spacing={1.25} sx={{ mt: 1.5 }}>
-              <Stack direction="row" justifyContent="space-between">
-                <Typography color="text.secondary">Tổng số bạn bè </Typography>
-                <Typography sx={{ fontWeight: 700 }}>{recentFriends.length}</Typography>
+              <Stack direction="row" spacing={2} justifyContent="space-between">
+                <Typography color="text.secondary">Tổng số bạn bè</Typography>
+                <Typography sx={{ fontWeight: 700 }}>{friends.length}</Typography>
               </Stack>
-              <Stack direction="row" justifyContent="space-between">
-                <Typography color="text.secondary">Lời mời chờ duyệt</Typography>
-                <Typography sx={{ fontWeight: 700 }}>{friendRequests.length}</Typography>
-              </Stack>
-              <Stack direction="row" justifyContent="space-between">
-                <Typography color="text.secondary">Kết nối mới hôm nay</Typography>
-                <Typography sx={{ fontWeight: 700 }}>{acceptedRequestsCount}</Typography>
+              <Stack direction="row" spacing={2} justifyContent="space-between">
+                <Typography color="text.secondary">Lời mời kết bạn</Typography>
+                <Typography sx={{ fontWeight: 700 }}>{pendingReceived.length}</Typography>
               </Stack>
             </Stack>
           </CardContent>
         </Card>
 
         <Stack spacing={2}>
-          {activeTab === 'requests' ? (
-            friendRequests.length > 0 ? (
-              friendRequests.map((request) => (
+          {isLoading ? (
+            <Card sx={{ borderRadius: 3 }}>
+              <CardContent>
+                <Stack direction="row" spacing={1.5} alignItems="center">
+                  <CircularProgress size={20} />
+                  <Typography color="text.secondary">Đang tải dữ liệu bạn bè...</Typography>
+                </Stack>
+              </CardContent>
+            </Card>
+          ) : hasLoadError ? (
+            <Card sx={{ borderRadius: 3 }}>
+              <CardContent>
+                <Typography color="error.main">
+                  {getApiErrorMessage(loadError, 'Không tải được dữ liệu bạn bè.')}
+                </Typography>
+              </CardContent>
+            </Card>
+          ) : activeTab === 'requests' ? (
+            pendingReceived.length > 0 ? (
+              pendingReceived.map((request) => (
                 <FriendRequestCard
                   key={request.id}
-                  request={request}
+                  request={{
+                    id: request.id,
+                    name: request.requesterName,
+                    email: request.requesterEmail,
+                    time: getRelativeTimeLabel(request.createdOn),
+                    avatarUrl: profileMap.get(request.requesterId)?.avatarUrl,
+                  }}
                   onAccept={handleAcceptRequest}
                   onReject={handleRejectRequest}
+                  disabled={isMutating}
                 />
               ))
             ) : (
               <Card sx={{ borderRadius: 3 }}>
                 <CardContent>
-                  <Typography color="text.secondary">Hiện không còn lời mời kết bạn nào.</Typography>
+                  <Typography color="text.secondary">Hiện chưa có lời mời kết bạn.</Typography>
                 </CardContent>
               </Card>
             )
@@ -186,14 +298,13 @@ function FriendsPage() {
                   <CardContent>
                     <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
                       <Stack direction="row" spacing={1.5} alignItems="center">
-                        <Avatar>{person.name[0]}</Avatar>
+                        <Avatar src={profileMap.get(person.id)?.avatarUrl || undefined}>
+                          {person.name?.[0] ?? '?'}
+                        </Avatar>
                         <Box>
                           <Typography sx={{ fontWeight: 700 }}>{person.name}</Typography>
                           <Typography variant="body2" color="text.secondary">
-                            {person.role}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {person.mutualFriends} bạn chung
+                            {person.email}
                           </Typography>
                         </Box>
                       </Stack>
@@ -201,7 +312,7 @@ function FriendsPage() {
                         size="small"
                         variant={person.requested ? 'outlined' : 'contained'}
                         color={person.requested ? 'inherit' : 'primary'}
-                        disabled={person.requested}
+                        disabled={person.requested || isMutating}
                         onClick={() => handleSendFriendRequest(person.id)}
                       >
                         {person.requested ? 'Đã gửi' : 'Thêm bạn'}
@@ -217,30 +328,54 @@ function FriendsPage() {
                 </CardContent>
               </Card>
             )
-          ) : (
-            recentFriends.map((friend) => (
-              <Card key={friend.id} sx={{ borderRadius: 3 }}>
+          ) : friends.length > 0 ? (
+            friends.map((friend) => (
+              <Card key={friend.userId} sx={{ borderRadius: 3 }}>
                 <CardContent>
                   <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
                     <Stack direction="row" spacing={1.5} alignItems="center">
-                      <Avatar>{friend.name[0]}</Avatar>
+                      <Avatar src={profileMap.get(friend.userId)?.avatarUrl || undefined}>
+                        {friend.fullName?.[0] ?? '?'}
+                      </Avatar>
                       <Box>
-                        <Typography sx={{ fontWeight: 700 }}>{friend.name}</Typography>
+                        <Typography sx={{ fontWeight: 700 }}>{friend.fullName}</Typography>
                         <Typography variant="body2" color="text.secondary">
-                          {friend.role}
+                          {friend.email}
                         </Typography>
                       </Box>
                     </Stack>
-                    <Chip label={friend.connectedAt} size="small" color="primary" variant="outlined" />
+                    <Chip label={`Kết nối ${getRelativeTimeLabel(friend.since)}`} size="small" color="primary" variant="outlined" />
                   </Stack>
                 </CardContent>
               </Card>
             ))
+          ) : (
+            <Card sx={{ borderRadius: 3 }}>
+              <CardContent>
+                <Typography color="text.secondary">Bạn chưa có bạn bè.</Typography>
+              </CardContent>
+            </Card>
           )}
         </Stack>
       </Box>
+
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={3000}
+        onClose={() => setNotification((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          severity={notification.severity}
+          variant="filled"
+          onClose={() => setNotification((prev) => ({ ...prev, open: false }))}
+        >
+          {notification.message}
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }
 
 export default FriendsPage
+

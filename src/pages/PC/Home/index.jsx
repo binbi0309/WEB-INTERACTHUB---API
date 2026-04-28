@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import Avatar from '@mui/material/Avatar'
 import Badge from '@mui/material/Badge'
 import Alert from '@mui/material/Alert'
@@ -8,6 +8,10 @@ import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import CardMedia from '@mui/material/CardMedia'
 import Chip from '@mui/material/Chip'
+import Dialog from '@mui/material/Dialog'
+import DialogActions from '@mui/material/DialogActions'
+import DialogContent from '@mui/material/DialogContent'
+import DialogTitle from '@mui/material/DialogTitle'
 import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
 import InputBase from '@mui/material/InputBase'
@@ -17,9 +21,11 @@ import MenuItem from '@mui/material/MenuItem'
 import Paper from '@mui/material/Paper'
 import Snackbar from '@mui/material/Snackbar'
 import Stack from '@mui/material/Stack'
+import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
-import BookmarkBorderRoundedIcon from '@mui/icons-material/BookmarkBorderRounded'
-import CircleRoundedIcon from '@mui/icons-material/CircleRounded'
+import ChatBubbleOutlineRoundedIcon from '@mui/icons-material/ChatBubbleOutlineRounded'
+import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded'
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import FavoriteBorderRoundedIcon from '@mui/icons-material/FavoriteBorderRounded'
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded'
 import InsertPhotoRoundedIcon from '@mui/icons-material/InsertPhotoRounded'
@@ -27,50 +33,36 @@ import MoreHorizRoundedIcon from '@mui/icons-material/MoreHorizRounded'
 import NotificationsNoneRoundedIcon from '@mui/icons-material/NotificationsNoneRounded'
 import PeopleRoundedIcon from '@mui/icons-material/PeopleRounded'
 import PersonRoundedIcon from '@mui/icons-material/PersonRounded'
+import ReportGmailerrorredRoundedIcon from '@mui/icons-material/ReportGmailerrorredRounded'
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded'
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded'
-import SendRoundedIcon from '@mui/icons-material/SendRounded'
+import ShareRoundedIcon from '@mui/icons-material/ShareRounded'
 import TuneRoundedIcon from '@mui/icons-material/TuneRounded'
 import VideocamRoundedIcon from '@mui/icons-material/VideocamRounded'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useLogoutMutation } from '../../../features/auth/hooks/useAuthMutations'
 import { getApiErrorMessage } from '../../../features/auth/authErrors'
+import {
+  useActiveUsersQuery,
+  useAuthorProfilesQuery,
+  useFeedQuery,
+  useMyProfileQuery,
+} from '../../../features/home/hooks/useHomeQueries'
+import {
+  useCreatePostMutation,
+  useDeletePostMutation,
+  useReportPostMutation,
+  useToggleLikeMutation,
+  useUpdatePostMutation,
+} from '../../../features/home/hooks/useHomeMutations'
+import { useSendFriendRequestMutation } from '../../../features/friends/hooks/useFriendMutations'
+import {
+  useMyFriendsQuery,
+  usePendingReceivedRequestsQuery,
+  usePendingSentRequestsQuery,
+} from '../../../features/friends/hooks/useFriendQueries'
 
-const trendingHashtags = [
-  { id: 1, tag: '#AdaptiveAI', posts: '12K bài viết' },
-  { id: 2, tag: '#MarketPivot', posts: '8.4K bài viết' },
-  { id: 3, tag: '#SpatialComputing', posts: '5.6K bài viết' },
-]
-
-const suggestions = [
-  { id: 1, name: 'Amara Kojo', role: 'Quản lý sản phẩm' },
-  { id: 2, name: 'Soren West', role: 'Giám đốc sáng tạo' },
-]
-
-const posts = [
-  {
-    id: 1,
-    author: 'Liam Vance',
-    role: 'Kiến trúc sư',
-    time: '2 giờ trước',
-    content:
-      'Định nghĩa lại sự giao thoa giữa hình thái hữu cơ và độ chính xác về cấu trúc. Dự án gian hàng mới này tập trung vào việc đón ánh sáng buổi sáng thông qua các lớp gỗ bền vững.',
-    image:
-      'https://images.unsplash.com/photo-1511818966892-d7d671e672a2?auto=format&fit=crop&w=1200&q=80',
-    stats: { likes: '1.2k', comments: '84' },
-  },
-  {
-    id: 2,
-    author: 'Industrial Intelligence',
-    role: 'Được tài trợ',
-    time: '4 giờ trước',
-    content:
-      'Tương lai của logistics tự hành đang được đẩy nhanh bởi các hệ thống AI và chuỗi cung ứng kết nối theo thời gian thực.',
-    image:
-      'https://images.unsplash.com/photo-1493238792000-8113da705763?auto=format&fit=crop&w=1200&q=80',
-    stats: { likes: '430', comments: '26' },
-  },
-]
+const EMPTY_LIST = []
 
 const desktopMenus = [
   { id: 'home', label: 'Trang chủ', icon: <HomeRoundedIcon fontSize="small" />, path: '/home' },
@@ -79,17 +71,122 @@ const desktopMenus = [
 ]
 
 function HomePage() {
+  const pageNumber = 1
+  const pageSize = 20
   const navigate = useNavigate()
   const location = useLocation()
   const active = location.pathname
   const logoutMutation = useLogoutMutation()
+  const feedQuery = useFeedQuery({ pageNumber, pageSize })
+  const myProfileQuery = useMyProfileQuery()
+  const activeUsersQuery = useActiveUsersQuery()
+  const myFriendsQuery = useMyFriendsQuery()
+  const pendingReceivedQuery = usePendingReceivedRequestsQuery()
+  const pendingSentQuery = usePendingSentRequestsQuery()
+  const createPostMutation = useCreatePostMutation(pageNumber, pageSize)
+  const toggleLikeMutation = useToggleLikeMutation(pageNumber, pageSize)
+  const sendFriendRequestMutation = useSendFriendRequestMutation()
+  const updatePostMutation = useUpdatePostMutation(pageNumber, pageSize)
+  const deletePostMutation = useDeletePostMutation(pageNumber, pageSize)
+  const reportPostMutation = useReportPostMutation(pageNumber, pageSize)
   const [notification, setNotification] = useState({
     open: false,
     severity: 'error',
     message: '',
   })
+  const [postContent, setPostContent] = useState('')
   const [avatarMenuAnchor, setAvatarMenuAnchor] = useState(null)
+  const [postMenuAnchor, setPostMenuAnchor] = useState(null)
+  const [selectedPost, setSelectedPost] = useState(null)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false)
+  const [editForm, setEditForm] = useState({
+    content: '',
+    imageUrl: '',
+  })
+  const [reportForm, setReportForm] = useState({
+    reason: '',
+    description: '',
+  })
   const isAvatarMenuOpen = Boolean(avatarMenuAnchor)
+  const isPostMenuOpen = Boolean(postMenuAnchor)
+  const posts = feedQuery.data?.data ?? EMPTY_LIST
+  const myProfile = myProfileQuery.data?.data
+  const activeUsers = activeUsersQuery.data?.data ?? EMPTY_LIST
+  const myFriends = myFriendsQuery.data?.data ?? EMPTY_LIST
+  const pendingReceivedRequests = pendingReceivedQuery.data?.data ?? EMPTY_LIST
+  const pendingSentRequests = pendingSentQuery.data?.data ?? EMPTY_LIST
+  const friendUserIdSet = useMemo(() => new Set(myFriends.map((friend) => friend.userId)), [myFriends])
+  const pendingReceivedUserIdSet = useMemo(
+    () => new Set(pendingReceivedRequests.map((request) => request.requesterId)),
+    [pendingReceivedRequests],
+  )
+  const pendingSentUserIdSet = useMemo(
+    () => new Set(pendingSentRequests.map((request) => request.addresseeId)),
+    [pendingSentRequests],
+  )
+  const suggestions = useMemo(() => {
+    return activeUsers
+      .filter((user) => user.id !== myProfile?.userId)
+      .filter((user) => !friendUserIdSet.has(user.id))
+      .filter((user) => !pendingReceivedUserIdSet.has(user.id))
+      .slice(0, 8)
+      .map((user) => ({
+        id: user.id,
+        name: `${user.firstName} ${user.lastName}`.trim(),
+        statusText: user.statusText,
+        requested: pendingSentUserIdSet.has(user.id),
+      }))
+  }, [activeUsers, friendUserIdSet, myProfile?.userId, pendingReceivedUserIdSet, pendingSentUserIdSet])
+  const authorProfileQueries = useAuthorProfilesQuery([
+    ...posts.map((post) => post.userId),
+    ...suggestions.map((item) => item.id),
+  ])
+  const trendingHashtags = useMemo(() => {
+    const hashtagCounter = new Map()
+
+    posts.forEach((post) => {
+      const tags = post.content?.match(/#[\p{L}\p{N}_]+/gu) ?? []
+      tags.forEach((tag) => {
+        hashtagCounter.set(tag, (hashtagCounter.get(tag) ?? 0) + 1)
+      })
+    })
+
+    return Array.from(hashtagCounter.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([tag, count]) => ({ tag, count }))
+  }, [posts])
+  const avatarByUserId = useMemo(() => {
+    return authorProfileQueries.reduce((accumulator, queryResult) => {
+      const userId = queryResult.data?.data?.userId
+      const avatarUrl = queryResult.data?.data?.avatarUrl
+
+      if (userId && avatarUrl) {
+        accumulator[userId] = avatarUrl
+      }
+
+      return accumulator
+    }, {})
+  }, [authorProfileQueries])
+
+  const formatPostDate = (value) => {
+    if (!value) {
+      return ''
+    }
+
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) {
+      return ''
+    }
+
+    return date.toLocaleString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
 
   const handleCloseNotification = (_, reason) => {
     if (reason === 'clickaway') {
@@ -128,6 +225,163 @@ function HomePage() {
   const handleGoToProfile = () => {
     setAvatarMenuAnchor(null)
     navigate('/profile')
+  }
+
+  const handleOpenPostMenu = (event, post) => {
+    setPostMenuAnchor(event.currentTarget)
+    setSelectedPost(post)
+  }
+
+  const handleClosePostMenu = () => {
+    setPostMenuAnchor(null)
+  }
+
+  const handleCreatePost = async () => {
+    const content = postContent.trim()
+    if (!content) {
+      setNotification({
+        open: true,
+        severity: 'warning',
+        message: 'Nội dung bài viết không được để trống.',
+      })
+      return
+    }
+
+    try {
+      await createPostMutation.mutateAsync({ content, imageUrl: null })
+      setPostContent('')
+      setNotification({
+        open: true,
+        severity: 'success',
+        message: 'Đăng bài thành công.',
+      })
+    } catch (error) {
+      setNotification({
+        open: true,
+        severity: 'error',
+        message: getApiErrorMessage(error, 'Đăng bài thất bại. Vui lòng thử lại.'),
+      })
+    }
+  }
+
+  const handleToggleLike = async (postId) => {
+    try {
+      await toggleLikeMutation.mutateAsync(postId)
+    } catch (error) {
+      setNotification({
+        open: true,
+        severity: 'error',
+        message: getApiErrorMessage(error, 'Khong the thich bai viet nay.'),
+      })
+    }
+  }
+
+  const handleSendFriendRequest = async (targetUserId) => {
+    try {
+      await sendFriendRequestMutation.mutateAsync(targetUserId)
+    } catch (error) {
+      setNotification({
+        open: true,
+        severity: 'error',
+        message: getApiErrorMessage(error, 'Khong the gui loi moi ket ban luc nay.'),
+      })
+    }
+  }
+
+  const handleOpenEditDialog = () => {
+    if (!selectedPost) {
+      return
+    }
+
+    setEditForm({
+      content: selectedPost.content ?? '',
+      imageUrl: selectedPost.imageUrl ?? '',
+    })
+    setIsEditDialogOpen(true)
+    handleClosePostMenu()
+  }
+
+  const handleSubmitEditPost = async () => {
+    if (!selectedPost) {
+      return
+    }
+
+    try {
+      await updatePostMutation.mutateAsync({
+        postId: selectedPost.id,
+        payload: {
+          content: editForm.content.trim(),
+          imageUrl: editForm.imageUrl.trim() || null,
+        },
+      })
+      setIsEditDialogOpen(false)
+      setNotification({
+        open: true,
+        severity: 'success',
+        message: 'Cập nhật bài viết thành công.',
+      })
+    } catch (error) {
+      setNotification({
+        open: true,
+        severity: 'error',
+        message: getApiErrorMessage(error, 'Không thể cập nhật bài viết.'),
+      })
+    }
+  }
+
+  const handleDeletePost = async () => {
+    if (!selectedPost) {
+      return
+    }
+
+    try {
+      await deletePostMutation.mutateAsync(selectedPost.id)
+      setNotification({
+        open: true,
+        severity: 'success',
+        message: 'Xóa bài viết thành công.',
+      })
+    } catch (error) {
+      setNotification({
+        open: true,
+        severity: 'error',
+        message: getApiErrorMessage(error, 'Không thể xóa bài viết.'),
+      })
+    } finally {
+      handleClosePostMenu()
+    }
+  }
+
+  const handleOpenReportDialog = () => {
+    setReportForm({ reason: '', description: '' })
+    setIsReportDialogOpen(true)
+    handleClosePostMenu()
+  }
+
+  const handleSubmitReportPost = async () => {
+    if (!selectedPost) {
+      return
+    }
+
+    try {
+      await reportPostMutation.mutateAsync({
+        postId: selectedPost.id,
+        reason: reportForm.reason.trim(),
+        description: reportForm.description.trim() || null,
+      })
+      setIsReportDialogOpen(false)
+      setNotification({
+        open: true,
+        severity: 'success',
+        message: 'Đã gửi báo cáo bài viết.',
+      })
+    } catch (error) {
+      setNotification({
+        open: true,
+        severity: 'error',
+        message: getApiErrorMessage(error, 'Không thể báo cáo bài viết lúc này.'),
+      })
+    }
   }
 
   return (
@@ -194,7 +448,9 @@ function HomePage() {
             aria-haspopup="menu"
             aria-expanded={isAvatarMenuOpen ? 'true' : undefined}
           >
-            <Avatar sx={{ width: 34, height: 34 }}>T</Avatar>
+            <Avatar sx={{ width: 34, height: 34 }} src={myProfile?.avatarUrl ?? ''}>
+              {myProfile?.fullName?.[0] ?? myProfile?.firstName?.[0] ?? 'U'}
+            </Avatar>
           </IconButton>
         </Stack>
       </Box>
@@ -230,6 +486,38 @@ function HomePage() {
         </MenuItem>
       </Menu>
 
+      <Menu
+        id="post-menu"
+        anchorEl={postMenuAnchor}
+        open={isPostMenuOpen}
+        onClose={handleClosePostMenu}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        {selectedPost?.userId === myProfile?.userId && (
+          <MenuItem onClick={handleOpenEditDialog}>
+            <ListItemIcon>
+              <EditOutlinedIcon fontSize="small" />
+            </ListItemIcon>
+            Chỉnh sửa bài viết
+          </MenuItem>
+        )}
+        {selectedPost?.userId === myProfile?.userId && (
+          <MenuItem onClick={handleDeletePost} disabled={deletePostMutation.isPending}>
+            <ListItemIcon>
+              <DeleteOutlineRoundedIcon fontSize="small" />
+            </ListItemIcon>
+            Xóa bài viết
+          </MenuItem>
+        )}
+        <MenuItem onClick={handleOpenReportDialog}>
+          <ListItemIcon>
+            <ReportGmailerrorredRoundedIcon fontSize="small" />
+          </ListItemIcon>
+          Báo cáo bài viết
+        </MenuItem>
+      </Menu>
+
       <Box sx={{ px: { xs: 2, md: 4 }, py: 3 }}>
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '220px minmax(0, 1fr) 300px' }, gap: 3 }}>
           <Card sx={{ display: { xs: 'none', md: 'block' }, height: 'fit-content', borderRadius: 3 }}>
@@ -258,9 +546,13 @@ function HomePage() {
             <Card sx={{ borderRadius: 3 }}>
               <CardContent>
                 <Stack direction="row" spacing={1.5}>
-                  <Avatar sx={{ width: 42, height: 42 }}>T</Avatar>
+                  <Avatar sx={{ width: 42, height: 42 }} src={myProfile?.avatarUrl ?? ''}>
+                    {myProfile?.fullName?.[0] ?? myProfile?.firstName?.[0] ?? 'U'}
+                  </Avatar>
                   <InputBase
                     placeholder="Bạn đang nghĩ gì?"
+                    value={postContent}
+                    onChange={(event) => setPostContent(event.target.value)}
                     sx={{
                       px: 2,
                       py: 1,
@@ -269,8 +561,13 @@ function HomePage() {
                       width: '100%',
                     }}
                   />
-                  <Button variant="contained" sx={{ borderRadius: 2, px: 2.5 }}>
-                    Đăng
+                  <Button
+                    variant="contained"
+                    sx={{ borderRadius: 2, px: 2.5 }}
+                    onClick={handleCreatePost}
+                    disabled={createPostMutation.isPending}
+                  >
+                    {createPostMutation.isPending ? 'Đang đăng...' : 'Đăng'}
                   </Button>
                 </Stack>
                 <Divider sx={{ my: 1.5 }} />
@@ -285,42 +582,63 @@ function HomePage() {
               </CardContent>
             </Card>
 
+            {feedQuery.isLoading && <Alert severity="info">Đang tải bản tin...</Alert>}
+            {feedQuery.isError && (
+              <Alert severity="error">
+                {getApiErrorMessage(feedQuery.error, 'Không thể tải bản tin.')}
+              </Alert>
+            )}
+
             {posts.map((post) => (
               <Card key={post.id} sx={{ borderRadius: 3 }}>
                 <CardContent>
                   <Stack direction="row" alignItems="center" justifyContent="space-between">
                     <Stack direction="row" spacing={1.5} alignItems="center">
-                      <Avatar>{post.author[0]}</Avatar>
+                      <Avatar src={avatarByUserId[post.userId] ?? ''}>
+                        {post.authorName?.[0] ?? 'U'}
+                      </Avatar>
                       <Box>
-                        <Typography fontWeight={700}>{post.author}</Typography>
+                        <Typography fontWeight={700}>{post.authorName}</Typography>
                         <Typography variant="caption" color="text.secondary">
-                          {post.role} <CircleRoundedIcon sx={{ fontSize: 6, mx: 0.6 }} /> {post.time}
+                          {formatPostDate(post.createdOn)}
                         </Typography>
                       </Box>
                     </Stack>
-                    <IconButton size="small">
+                    <IconButton
+                      size="small"
+                      onClick={(event) => handleOpenPostMenu(event, post)}
+                      sx={{ ml: 'auto', alignSelf: 'flex-start' }}
+                    >
                       <MoreHorizRoundedIcon />
                     </IconButton>
                   </Stack>
 
                   <Typography sx={{ mt: 1.5, color: 'text.secondary' }}>{post.content}</Typography>
                 </CardContent>
-                <CardMedia component="img" image={post.image} alt={post.author} sx={{ maxHeight: 430 }} />
+                {post.imageUrl && (
+                  <CardMedia component="img" image={post.imageUrl} alt={post.authorName} sx={{ maxHeight: 430 }} />
+                )}
                 <CardContent sx={{ pt: 1.5 }}>
                   <Stack direction="row" alignItems="center" justifyContent="space-between">
                     <Stack direction="row" spacing={2}>
-                      <Button size="small" startIcon={<FavoriteBorderRoundedIcon />}>
-                        {post.stats.likes}
+                      <Button
+                        size="small"
+                        startIcon={
+                          <FavoriteBorderRoundedIcon
+                            color={post.isLikedByCurrentUser ? 'error' : 'inherit'}
+                          />
+                        }
+                        onClick={() => handleToggleLike(post.id)}
+                        disabled={toggleLikeMutation.isPending}
+                      >
+                        {post.likeCount ?? 0}
                       </Button>
-                      <Button size="small">{post.stats.comments} bình luận</Button>
-                    </Stack>
-                    <Stack direction="row">
-                      <IconButton size="small">
-                        <BookmarkBorderRoundedIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton size="small">
-                        <SendRoundedIcon fontSize="small" />
-                      </IconButton>
+                      <Button size="small" startIcon={<ChatBubbleOutlineRoundedIcon />}>
+                        {post.commentCount ?? 0}
+                      </Button>
+                      <Button size="small" startIcon={<ShareRoundedIcon />}>
+                        {post.shareCount ?? 0}
+                      </Button>
                     </Stack>
                   </Stack>
                 </CardContent>
@@ -333,14 +651,18 @@ function HomePage() {
               <CardContent>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
                   <Typography fontWeight={700}>Xu hướng hiện nay</Typography>
-                  <TuneRoundedIcon color="action" fontSize="small" />
                 </Stack>
                 <Stack spacing={1.25}>
+                  {trendingHashtags.length === 0 && (
+                    <Typography variant="body2" color="text.secondary">
+                      Chưa có hastag trong bảng tin.
+                    </Typography>
+                  )}
                   {trendingHashtags.map((item) => (
-                    <Box key={item.id}>
+                    <Box key={item.tag}>
                       <Typography fontWeight={600}>{item.tag}</Typography>
                       <Typography variant="body2" color="text.secondary">
-                        {item.posts}
+                        {item.count} bài viết
                       </Typography>
                     </Box>
                   ))}
@@ -354,6 +676,11 @@ function HomePage() {
                   Gợi ý kết bạn
                 </Typography>
                 <Stack spacing={1.25}>
+                  {activeUsersQuery.isLoading && (
+                    <Typography variant="body2" color="text.secondary">
+                      Đang tải gợi ý...
+                    </Typography>
+                  )}
                   {suggestions.map((item) => (
                     <Stack
                       key={item.id}
@@ -363,15 +690,20 @@ function HomePage() {
                       sx={{ p: 1, borderRadius: 2, backgroundColor: '#F7F8FA' }}
                     >
                       <Stack direction="row" spacing={1.25} alignItems="center">
-                        <Avatar>{item.name[0]}</Avatar>
+                        <Avatar src={avatarByUserId[item.id] ?? ''}>{item.name[0]}</Avatar>
                         <Box>
                           <Typography fontWeight={600}>{item.name}</Typography>
                           <Typography variant="caption" color="text.secondary">
-                            {item.role}
+                            {item.statusText}
                           </Typography>
                         </Box>
                       </Stack>
-                      <Chip label="Theo dõi" size="small" />
+                      <Chip
+                        label={item.requested ? 'Đã gửi' : 'Thêm bạn'}
+                        size="small"
+                        onClick={() => handleSendFriendRequest(item.id)}
+                        disabled={item.requested || sendFriendRequestMutation.isPending}
+                      />
                     </Stack>
                   ))}
                 </Stack>
@@ -391,6 +723,58 @@ function HomePage() {
           {notification.message}
         </Alert>
       </Snackbar>
+
+      <Dialog open={isEditDialogOpen} onClose={() => setIsEditDialogOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle>Chỉnh sửa bài viết</DialogTitle>
+        <DialogContent sx={{ pt: 1 }}>
+          <Stack spacing={1.5} sx={{ mt: 0.5 }}>
+            <TextField
+              label="Nội dung"
+              multiline
+              minRows={3}
+              value={editForm.content}
+              onChange={(event) => setEditForm((prev) => ({ ...prev, content: event.target.value }))}
+            />
+            <TextField
+              label="Ảnh URL (không bắt buộc)"
+              value={editForm.imageUrl}
+              onChange={(event) => setEditForm((prev) => ({ ...prev, imageUrl: event.target.value }))}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsEditDialogOpen(false)}>Hủy</Button>
+          <Button variant="contained" onClick={handleSubmitEditPost} disabled={updatePostMutation.isPending}>
+            {updatePostMutation.isPending ? 'Đang lưu...' : 'Lưu'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={isReportDialogOpen} onClose={() => setIsReportDialogOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle>Báo cáo bài viết</DialogTitle>
+        <DialogContent sx={{ pt: 1 }}>
+          <Stack spacing={1.5} sx={{ mt: 0.5 }}>
+            <TextField
+              label="Lý do"
+              value={reportForm.reason}
+              onChange={(event) => setReportForm((prev) => ({ ...prev, reason: event.target.value }))}
+            />
+            <TextField
+              label="Mô tả thêm (không bắt buộc)"
+              multiline
+              minRows={3}
+              value={reportForm.description}
+              onChange={(event) => setReportForm((prev) => ({ ...prev, description: event.target.value }))}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsReportDialogOpen(false)}>Hủy</Button>
+          <Button variant="contained" onClick={handleSubmitReportPost} disabled={reportPostMutation.isPending}>
+            {reportPostMutation.isPending ? 'Đang gửi...' : 'Gửi báo cáo'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }

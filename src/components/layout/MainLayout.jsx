@@ -18,12 +18,17 @@ import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useLogoutMutation } from '../../features/auth/hooks/useAuthMutations'
 import { getApiErrorMessage } from '../../features/auth/authErrors'
+import { useMyProfileQuery } from '../../features/profile/hooks/useProfileQueries'
 
-function MainLayout({ children }) {
+function MainLayout({ children, showProfileButton = true }) {
   const navigate = useNavigate()
   const location = useLocation()
   const active = location.pathname
   const logoutMutation = useLogoutMutation()
+  const myProfileQuery = useMyProfileQuery({
+    enabled: showProfileButton,
+  })
+  const myProfile = myProfileQuery.data?.data
   const [notification, setNotification] = useState({
     open: false,
     severity: 'error',
@@ -104,9 +109,13 @@ function MainLayout({ children }) {
                 <NotificationsNoneRoundedIcon fontSize="small" />
               </Badge>
             </IconButton>
-            <IconButton size="small" aria-label="Hồ sơ" onClick={() => navigate('/profile')}>
-              <Avatar sx={{ width: 30, height: 30 }}>T</Avatar>
-            </IconButton>
+            {showProfileButton && (
+              <IconButton size="small" aria-label="Hồ sơ" onClick={() => navigate('/profile')}>
+                <Avatar sx={{ width: 30, height: 30 }} src={myProfile?.avatarUrl ?? ''}>
+                  {myProfile?.fullName?.[0] ?? myProfile?.firstName?.[0] ?? 'U'}
+                </Avatar>
+              </IconButton>
+            )}
             <IconButton
               size="small"
               aria-label="Đăng xuất"

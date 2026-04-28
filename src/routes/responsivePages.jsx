@@ -54,7 +54,7 @@ export function ResponsiveLogin() {
   const isMobile = useIsMobileLayout()
   if (isMobile) return <MobileLoginPage />
   return (
-    <MainLayout>
+    <MainLayout showProfileButton={false}>
       <LoginPage />
     </MainLayout>
   )
@@ -64,7 +64,7 @@ export function ResponsiveRegister() {
   const isMobile = useIsMobileLayout()
   if (isMobile) return <MobileRegisterPage />
   return (
-    <MainLayout>
+    <MainLayout showProfileButton={false}>
       <RegisterPage />
     </MainLayout>
   )
