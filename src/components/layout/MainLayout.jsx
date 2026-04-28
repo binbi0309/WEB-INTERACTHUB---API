@@ -19,6 +19,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useLogoutMutation } from '../../features/auth/hooks/useAuthMutations'
 import { getApiErrorMessage } from '../../features/auth/authErrors'
 import { useMyProfileQuery } from '../../features/profile/hooks/useProfileQueries'
+import { useUnreadNotificationCountQuery } from '../../features/notifications/hooks/useNotificationQueries'
 
 function MainLayout({ children, showProfileButton = true }) {
   const navigate = useNavigate()
@@ -28,7 +29,11 @@ function MainLayout({ children, showProfileButton = true }) {
   const myProfileQuery = useMyProfileQuery({
     enabled: showProfileButton,
   })
+  const unreadCountQuery = useUnreadNotificationCountQuery({
+    enabled: showProfileButton,
+  })
   const myProfile = myProfileQuery.data?.data
+  const unreadCount = unreadCountQuery.data?.count ?? 0
   const [notification, setNotification] = useState({
     open: false,
     severity: 'error',
@@ -105,7 +110,7 @@ function MainLayout({ children, showProfileButton = true }) {
               onClick={() => navigate('/notifications')}
               color={active === '/notifications' ? 'inherit' : 'default'}
             >
-              <Badge color="primary" variant="dot">
+              <Badge color="primary" badgeContent={unreadCount > 0 ? unreadCount : null} max={99}>
                 <NotificationsNoneRoundedIcon fontSize="small" />
               </Badge>
             </IconButton>

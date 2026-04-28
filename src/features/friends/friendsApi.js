@@ -46,3 +46,8 @@ export async function rejectFriendRequest(requestId) {
   return response.data
 }
 
+export async function removeFriend(targetUserId) {
+  const response = await axiosClient.delete(`${endPoints.FRIEND_REMOVE}/${targetUserId}`)
+  return response.data
+}
+

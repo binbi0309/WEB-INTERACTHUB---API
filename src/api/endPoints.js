@@ -24,6 +24,7 @@ const endPoints = {
   FRIEND_GET_PENDING_RECEIVED: '/api/Friend/GetPendingReceivedRequests',
   FRIEND_GET_PENDING_SENT: '/api/Friend/GetPendingSentRequests',
   FRIEND_GET_FRIENDS: '/api/Friend/GetFriends',
+  FRIEND_REMOVE: '/api/Friend/RemoveFriend',
   NOTIFICATION_LIST: '/api/Notification',
   NOTIFICATION_UNREAD_COUNT: '/api/Notification/UnreadCount',
   NOTIFICATION_MARK_AS_READ: '/api/Notification/MarkAsRead',

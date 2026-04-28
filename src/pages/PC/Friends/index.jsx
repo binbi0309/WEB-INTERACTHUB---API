@@ -13,6 +13,7 @@ import Typography from '@mui/material/Typography'
 import { getApiErrorMessage } from '../../../features/auth/authErrors'
 import {
   useAcceptFriendRequestMutation,
+  useRemoveFriendMutation,
   useRejectFriendRequestMutation,
   useSendFriendRequestMutation,
 } from '../../../features/friends/hooks/useFriendMutations'
@@ -45,8 +46,8 @@ function FriendRequestCard({ request, onAccept, onReject, disabled }) {
   return (
     <Card sx={{ borderRadius: 3 }}>
       <CardContent>
-        <Stack direction="row" justifyContent="space-between" spacing={40}>
-          <Stack direction="row" spacing={1.5} alignItems="center">
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <Stack direction="row" spacing={1.5} alignItems="center" sx={{ flex: 1, minWidth: 0 }}>
             <Avatar src={request.avatarUrl || undefined}>{request.name?.[0] ?? '?'}</Avatar>
             <Box>
               <Typography sx={{ fontWeight: 700 }}>{request.name}</Typography>
@@ -58,7 +59,7 @@ function FriendRequestCard({ request, onAccept, onReject, disabled }) {
               </Typography>
             </Box>
           </Stack>
-          <Stack direction="row" spacing={1} >
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ ml: 'auto', flexShrink: 0 }}>
             <Button size="small" variant="contained" disabled={disabled} onClick={() => onAccept(request.id)}>
               Chấp nhận
             </Button>
@@ -89,6 +90,7 @@ function FriendsPage() {
   const sendRequestMutation = useSendFriendRequestMutation()
   const acceptRequestMutation = useAcceptFriendRequestMutation()
   const rejectRequestMutation = useRejectFriendRequestMutation()
+  const removeFriendMutation = useRemoveFriendMutation()
 
   const myProfile = myProfileQuery.data?.data
   const friends = friendsQuery.data?.data ?? EMPTY_LIST
@@ -147,7 +149,10 @@ function FriendsPage() {
     activeUsersQuery.isLoading ||
     myProfileQuery.isLoading
   const isMutating =
-    sendRequestMutation.isPending || acceptRequestMutation.isPending || rejectRequestMutation.isPending
+    sendRequestMutation.isPending ||
+    acceptRequestMutation.isPending ||
+    rejectRequestMutation.isPending ||
+    removeFriendMutation.isPending
   const hasLoadError =
     friendsQuery.isError ||
     pendingReceivedQuery.isError ||
@@ -194,6 +199,15 @@ function FriendsPage() {
       showNotification('success', 'Gửi lời mời kết bạn thành công.')
     } catch (error) {
       showNotification('error', getApiErrorMessage(error, 'Không thể gửi lời mời kết bạn.'))
+    }
+  }
+
+  const handleRemoveFriend = async (targetUserId) => {
+    try {
+      await removeFriendMutation.mutateAsync(targetUserId)
+      showNotification('success', 'Hủy kết bạn thành công.')
+    } catch (error) {
+      showNotification('error', getApiErrorMessage(error, 'Không thể hủy kết bạn.'))
     }
   }
 
@@ -332,8 +346,8 @@ function FriendsPage() {
             friends.map((friend) => (
               <Card key={friend.userId} sx={{ borderRadius: 3 }}>
                 <CardContent>
-                  <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
-                    <Stack direction="row" spacing={1.5} alignItems="center">
+                  <Stack direction="row" alignItems="center" spacing={2}>
+                    <Stack direction="row" spacing={1.5} alignItems="center" sx={{ flex: 1, minWidth: 0 }}>
                       <Avatar src={profileMap.get(friend.userId)?.avatarUrl || undefined}>
                         {friend.fullName?.[0] ?? '?'}
                       </Avatar>
@@ -342,9 +356,26 @@ function FriendsPage() {
                         <Typography variant="body2" color="text.secondary">
                           {friend.email}
                         </Typography>
+                        <Chip
+                          label={`Kết nối ${getRelativeTimeLabel(friend.since)}`}
+                          size="small"
+                          color="primary"
+                          variant="outlined"
+                          sx={{ mt: 0.75 }}
+                        />
                       </Box>
                     </Stack>
-                    <Chip label={`Kết nối ${getRelativeTimeLabel(friend.since)}`} size="small" color="primary" variant="outlined" />
+                    <Stack direction="row" alignItems="center" spacing={1} sx={{ ml: 'auto', flexShrink: 0 }}>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="error"
+                        disabled={isMutating}
+                        onClick={() => handleRemoveFriend(friend.userId)}
+                      >
+                        Hủy kết bạn
+                      </Button>
+                    </Stack>
                   </Stack>
                 </CardContent>
               </Card>

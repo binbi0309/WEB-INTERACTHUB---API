@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { acceptFriendRequest, rejectFriendRequest, sendFriendRequest } from '../friendsApi'
+import { acceptFriendRequest, rejectFriendRequest, removeFriend, sendFriendRequest } from '../friendsApi'
 import { FRIENDS_QUERY_KEYS } from '../friendsQueryKeys'
 
 async function invalidateFriendQueries(queryClient) {
@@ -36,6 +36,17 @@ export function useRejectFriendRequestMutation() {
 
   return useMutation({
     mutationFn: rejectFriendRequest,
+    onSuccess: async () => {
+      await invalidateFriendQueries(queryClient)
+    },
+  })
+}
+
+export function useRemoveFriendMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: removeFriend,
     onSuccess: async () => {
       await invalidateFriendQueries(queryClient)
     },

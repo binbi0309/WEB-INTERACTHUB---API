@@ -575,9 +575,6 @@ function HomePage() {
                   <Button startIcon={<InsertPhotoRoundedIcon />} size="small">
                     Ảnh/Video
                   </Button>
-                  <Button startIcon={<VideocamRoundedIcon />} size="small">
-                    Sự kiện
-                  </Button>
                 </Stack>
               </CardContent>
             </Card>

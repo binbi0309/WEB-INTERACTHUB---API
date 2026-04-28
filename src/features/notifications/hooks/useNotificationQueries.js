@@ -11,10 +11,11 @@ export function useNotificationsQuery(params = {}) {
   })
 }
 
-export function useUnreadNotificationCountQuery() {
+export function useUnreadNotificationCountQuery(options = {}) {
   return useQuery({
     queryKey: NOTIFICATION_QUERY_KEYS.unreadCount,
     queryFn: getUnreadNotificationCount,
     staleTime: 10 * 1000,
+    ...options,
   })
 }
