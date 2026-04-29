@@ -1,199 +1,84 @@
 import { useMemo, useState } from 'react'
+import Alert from '@mui/material/Alert'
 import Avatar from '@mui/material/Avatar'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
-import CardMedia from '@mui/material/CardMedia'
 import Chip from '@mui/material/Chip'
-import Divider from '@mui/material/Divider'
+import CircularProgress from '@mui/material/CircularProgress'
 import IconButton from '@mui/material/IconButton'
+import ListItemIcon from '@mui/material/ListItemIcon'
+import Menu from '@mui/material/Menu'
+import MenuItem from '@mui/material/MenuItem'
 import Paper from '@mui/material/Paper'
+import Snackbar from '@mui/material/Snackbar'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import AddRoundedIcon from '@mui/icons-material/AddRounded'
-import ChatBubbleOutlineRoundedIcon from '@mui/icons-material/ChatBubbleOutlineRounded'
-import FilterListRoundedIcon from '@mui/icons-material/FilterListRounded'
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded'
+import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded'
 import NotificationsNoneRoundedIcon from '@mui/icons-material/NotificationsNoneRounded'
 import PeopleRoundedIcon from '@mui/icons-material/PeopleRounded'
 import PersonRoundedIcon from '@mui/icons-material/PersonRounded'
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useLogoutMutation } from '../../../features/auth/hooks/useAuthMutations'
+import { getApiErrorMessage } from '../../../features/auth/authErrors'
+import {
+  useAcceptFriendRequestMutation,
+  useRemoveFriendMutation,
+  useRejectFriendRequestMutation,
+  useSendFriendRequestMutation,
+} from '../../../features/friends/hooks/useFriendMutations'
+import {
+  useFriendsActiveUsersQuery,
+  useFriendsMyProfileQuery,
+  useFriendProfilesQuery,
+  useMyFriendsQuery,
+  usePendingReceivedRequestsQuery,
+  usePendingSentRequestsQuery,
+} from '../../../features/friends/hooks/useFriendQueries'
 
-const friendRequestsSeed = [
-  {
-    id: 1,
-    name: 'Lê Minh Anh',
-    role: 'Nhà thiết kế sản phẩm',
-    mutualFriends: 3,
-    time: '2 giờ trước',
-    cover: 'https://images.unsplash.com/photo-1520975958225-15d3b0b6ef3d?auto=format&fit=crop&w=900&q=80',
-  },
-  {
-    id: 2,
-    name: 'Nguyễn Hoàng Nam',
-    role: 'Kỹ sư Front-end',
-    mutualFriends: 12,
-    time: '1 ngày trước',
-    cover: 'https://images.unsplash.com/photo-1520975958225-15d3b0b6ef3d?auto=format&fit=crop&w=900&q=80',
-  },
-  {
-    id: 3,
-    name: 'Trần Thu Hà',
-    role: 'Quản lý vận hành',
-    mutualFriends: 8,
-    time: '3 ngày trước',
-    cover: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80',
-  },
-]
+const EMPTY_LIST = []
 
-const friendsSeed = [
-  {
-    id: 1,
-    name: 'Trần Thu Hà',
-    status: 'Hoạt động 5 phút trước',
-    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80',
-  },
-  {
-    id: 2,
-    name: 'Phạm Gia Bảo',
-    status: 'Đang trực tuyến',
-    online: true,
-    avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=200&q=80',
-  },
-  {
-    id: 3,
-    name: 'Vũ Hoàng Yến',
-    status: 'Hoạt động 2 giờ trước',
-    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80',
-  },
-  {
-    id: 4,
-    name: 'Đặng Minh Tuấn',
-    status: 'Đang trực tuyến',
-    online: true,
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
-  },
-]
-
-const suggestionsSeed = [
-  { id: 11, name: 'Elena Rodriguez', role: 'Nhà thiết kế sản phẩm', mutualFriends: 18 },
-  { id: 12, name: 'Julian Chen', role: 'Kỹ sư Front-end', mutualFriends: 9 },
-  { id: 13, name: 'Sarah King', role: 'Quản lý vận hành', mutualFriends: 6 },
-]
-
-function TabButton({ active, children, onClick }) {
-  return (
-    <Button
-      onClick={onClick}
-      color="inherit"
-      sx={{
-        px: 0,
-        borderRadius: 0,
-        fontWeight: 800,
-        color: active ? 'text.primary' : 'text.secondary',
-        position: 'relative',
-        '&::after': active
-          ? {
-              content: '""',
-              position: 'absolute',
-              left: 0,
-              right: 0,
-              bottom: -10,
-              height: 3,
-              borderRadius: 999,
-              backgroundColor: 'primary.main',
-            }
-          : {},
-      }}
-    >
-      {children}
-    </Button>
-  )
+function getRelativeTimeLabel(value) {
+  if (!value) return 'Vừa cập nhật'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'Vừa cập nhật'
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
+  if (seconds < 60) return 'Vừa xong'
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} phút trước`
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)} giờ trước`
+  if (seconds < 604800) return `${Math.floor(seconds / 86400)} ngày trước`
+  return date.toLocaleDateString('vi-VN')
 }
 
-function FriendRequestCard({ request, onAccept, onReject }) {
+function FriendRequestCard({ request, onAccept, onReject, disabled }) {
   return (
-    <Card sx={{ borderRadius: 4, minWidth: 240, maxWidth: 240, overflow: 'hidden' }}>
-      <Box sx={{ position: 'relative' }}>
-        <CardMedia component="img" image={request.cover} alt={request.name} sx={{ height: 130 }} />
-        <Chip
-          label={`${request.mutualFriends} bạn chung`}
-          size="small"
-          sx={{
-            position: 'absolute',
-            top: 10,
-            left: 10,
-            color: '#FFFFFF',
-            backgroundColor: 'rgba(0,0,0,0.55)',
-            fontWeight: 800,
-          }}
-        />
-      </Box>
-      <CardContent sx={{ pt: 1.5 }}>
-        <Typography sx={{ fontWeight: 900 }}>{request.name}</Typography>
-        <Typography variant="body2" color="text.secondary">
-          {request.role}
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          {request.time}
-        </Typography>
-        <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
-          <Button size="small" fullWidth variant="contained" onClick={() => onAccept(request.id)} sx={{ borderRadius: 3 }}>
-            Chấp nhận
-          </Button>
-          <Button
-            size="small"
-            fullWidth
-            variant="outlined"
-            color="inherit"
-            onClick={() => onReject(request.id)}
-            sx={{ borderRadius: 3 }}
-          >
-            Từ chối
-          </Button>
-        </Stack>
-      </CardContent>
-    </Card>
-  )
-}
-
-function FriendRow({ friend }) {
-  return (
-    <Card sx={{ borderRadius: 4 }}>
-      <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
-          <Stack direction="row" spacing={1.25} alignItems="center">
-            <Box sx={{ position: 'relative' }}>
-              <Avatar src={friend.avatar} alt={friend.name} sx={{ width: 44, height: 44 }}>
-                {friend.name?.[0]}
-              </Avatar>
-              {friend.online ? (
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    right: -1,
-                    bottom: -1,
-                    width: 12,
-                    height: 12,
-                    borderRadius: '50%',
-                    backgroundColor: '#22C55E',
-                    border: '2px solid #FFFFFF',
-                  }}
-                />
-              ) : null}
-            </Box>
-            <Box>
-              <Typography sx={{ fontWeight: 900 }}>{friend.name}</Typography>
-              <Typography variant="body2" color="text.secondary">
-                {friend.status}
+    <Card sx={{ borderRadius: 3 }}>
+      <CardContent>
+        <Stack spacing={1.25}>
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <Avatar src={request.avatarUrl || undefined}>{request.name?.[0] ?? '?'}</Avatar>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography sx={{ fontWeight: 700 }}>{request.name}</Typography>
+              <Typography variant="body2" color="text.secondary" noWrap>
+                {request.email}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {request.time}
               </Typography>
             </Box>
           </Stack>
-          <IconButton size="small" aria-label="Nhắn tin">
-            <ChatBubbleOutlineRoundedIcon fontSize="small" />
-          </IconButton>
+          <Stack direction="row" spacing={1}>
+            <Button size="small" variant="contained" fullWidth disabled={disabled} onClick={() => onAccept(request.id)}>
+              Chấp nhận
+            </Button>
+            <Button size="small" variant="outlined" color="inherit" fullWidth disabled={disabled} onClick={() => onReject(request.id)}>
+              Từ chối
+            </Button>
+          </Stack>
         </Stack>
       </CardContent>
     </Card>
@@ -204,47 +89,170 @@ function MobileFriendsPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const active = location.pathname
+  const [activeTab, setActiveTab] = useState('friends')
+  const [avatarMenuAnchor, setAvatarMenuAnchor] = useState(null)
+  const [notification, setNotification] = useState({
+    open: false,
+    severity: 'success',
+    message: '',
+  })
+  const isAvatarMenuOpen = Boolean(avatarMenuAnchor)
 
-  const [activeTopTab, setActiveTopTab] = useState('friends')
-  const [friendRequests, setFriendRequests] = useState(friendRequestsSeed)
-  const [friends, setFriends] = useState(friendsSeed)
-  const [suggestions, setSuggestions] = useState(suggestionsSeed)
+  const logoutMutation = useLogoutMutation()
+  const friendsQuery = useMyFriendsQuery()
+  const pendingReceivedQuery = usePendingReceivedRequestsQuery()
+  const pendingSentQuery = usePendingSentRequestsQuery()
+  const activeUsersQuery = useFriendsActiveUsersQuery()
+  const myProfileQuery = useFriendsMyProfileQuery()
 
-  const acceptedRequestsCount = useMemo(() => {
-    return friends.length - friendsSeed.length + (friendRequestsSeed.length - friendRequests.length)
-  }, [friendRequests.length, friends.length])
+  const sendRequestMutation = useSendFriendRequestMutation()
+  const acceptRequestMutation = useAcceptFriendRequestMutation()
+  const rejectRequestMutation = useRejectFriendRequestMutation()
+  const removeFriendMutation = useRemoveFriendMutation()
 
-  const handleAcceptRequest = (requestId) => {
-    const accepted = friendRequests.find((item) => item.id === requestId)
-    if (!accepted) return
+  const myProfile = myProfileQuery.data?.data
+  const friends = friendsQuery.data?.data ?? EMPTY_LIST
+  const pendingReceived = pendingReceivedQuery.data?.data ?? EMPTY_LIST
+  const pendingSent = pendingSentQuery.data?.data ?? EMPTY_LIST
+  const activeUsers = activeUsersQuery.data?.data ?? EMPTY_LIST
 
-    setFriends((prev) => [
-      {
-        id: Date.now(),
-        name: accepted.name,
-        status: 'Vừa kết bạn',
-        online: true,
-        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80',
-      },
-      ...prev,
-    ])
-    setFriendRequests((prev) => prev.filter((item) => item.id !== requestId))
-    setActiveTopTab('friends')
+  const pendingSentUserIdSet = useMemo(
+    () => new Set(pendingSent.map((request) => request.addresseeId)),
+    [pendingSent],
+  )
+  const pendingReceivedUserIdSet = useMemo(
+    () => new Set(pendingReceived.map((request) => request.requesterId)),
+    [pendingReceived],
+  )
+  const friendUserIdSet = useMemo(() => new Set(friends.map((friend) => friend.userId)), [friends])
+
+  const suggestions = useMemo(
+    () =>
+      activeUsers
+        .filter((user) => user.id !== myProfile?.userId)
+        .filter((user) => !friendUserIdSet.has(user.id))
+        .filter((user) => !pendingReceivedUserIdSet.has(user.id))
+        .map((user) => ({
+          id: user.id,
+          name: `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.emailId,
+          email: user.emailId,
+          requested: pendingSentUserIdSet.has(user.id),
+        })),
+    [activeUsers, friendUserIdSet, myProfile?.userId, pendingReceivedUserIdSet, pendingSentUserIdSet],
+  )
+
+  const profileUserIds = useMemo(
+    () => [
+      ...friends.map((friend) => friend.userId),
+      ...pendingReceived.map((request) => request.requesterId),
+      ...suggestions.map((user) => user.id),
+    ],
+    [friends, pendingReceived, suggestions],
+  )
+  const profileQueries = useFriendProfilesQuery(profileUserIds)
+  const profileMap = useMemo(() => {
+    return profileQueries.reduce((acc, query) => {
+      const userId = query.data?.data?.userId
+      if (userId) {
+        acc.set(userId, query.data?.data)
+      }
+      return acc
+    }, new Map())
+  }, [profileQueries])
+
+  const isLoading =
+    friendsQuery.isLoading ||
+    pendingReceivedQuery.isLoading ||
+    pendingSentQuery.isLoading ||
+    activeUsersQuery.isLoading ||
+    myProfileQuery.isLoading
+  const isMutating =
+    sendRequestMutation.isPending ||
+    acceptRequestMutation.isPending ||
+    rejectRequestMutation.isPending ||
+    removeFriendMutation.isPending
+  const hasLoadError =
+    friendsQuery.isError ||
+    pendingReceivedQuery.isError ||
+    pendingSentQuery.isError ||
+    activeUsersQuery.isError ||
+    myProfileQuery.isError
+  const loadError =
+    friendsQuery.error ||
+    pendingReceivedQuery.error ||
+    pendingSentQuery.error ||
+    activeUsersQuery.error ||
+    myProfileQuery.error
+
+  const showNotification = (severity, message) => {
+    setNotification({
+      open: true,
+      severity,
+      message,
+    })
   }
 
-  const handleRejectRequest = (requestId) => {
-    setFriendRequests((prev) => prev.filter((item) => item.id !== requestId))
+  const handleAcceptRequest = async (requestId) => {
+    try {
+      await acceptRequestMutation.mutateAsync(requestId)
+      setActiveTab('friends')
+      showNotification('success', 'Chấp nhận lời mời kết bạn thành công.')
+    } catch (error) {
+      showNotification('error', getApiErrorMessage(error, 'Không thể chấp nhận lời mời kết bạn.'))
+    }
   }
 
-  const handleAddSuggestion = (suggestionId) => {
-    setSuggestions((prev) => prev.filter((item) => item.id !== suggestionId))
+  const handleRejectRequest = async (requestId) => {
+    try {
+      await rejectRequestMutation.mutateAsync(requestId)
+      showNotification('success', 'Đã từ chối lời mời kết bạn.')
+    } catch (error) {
+      showNotification('error', getApiErrorMessage(error, 'Không thể từ chối lời mời kết bạn.'))
+    }
+  }
+
+  const handleSendFriendRequest = async (targetUserId) => {
+    try {
+      await sendRequestMutation.mutateAsync(targetUserId)
+      showNotification('success', 'Gửi lời mời kết bạn thành công.')
+    } catch (error) {
+      showNotification('error', getApiErrorMessage(error, 'Không thể gửi lời mời kết bạn.'))
+    }
+  }
+
+  const handleRemoveFriend = async (targetUserId) => {
+    try {
+      await removeFriendMutation.mutateAsync(targetUserId)
+      showNotification('success', 'Hủy kết bạn thành công.')
+    } catch (error) {
+      showNotification('error', getApiErrorMessage(error, 'Không thể hủy kết bạn.'))
+    }
+  }
+
+  const handleOpenAvatarMenu = (event) => {
+    setAvatarMenuAnchor(event.currentTarget)
+  }
+
+  const handleCloseAvatarMenu = () => {
+    setAvatarMenuAnchor(null)
+  }
+
+  const handleLogout = async () => {
+    setAvatarMenuAnchor(null)
+    try {
+      await logoutMutation.mutateAsync()
+      navigate('/login', { replace: true })
+    } catch (error) {
+      showNotification('error', getApiErrorMessage(error, 'Đăng xuất thất bại. Vui lòng thử lại.'))
+    }
   }
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: '#F3F4F6', pb: 10 }}>
       <Box
         sx={{
-          px: 2,
+          pl: 2,
+          pr: 0.75,
           py: 1.2,
           backgroundColor: '#FFFFFF',
           borderBottom: '1px solid',
@@ -254,135 +262,240 @@ function MobileFriendsPage() {
           zIndex: 20,
         }}
       >
-        <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Avatar sx={{ width: 28, height: 28, bgcolor: 'primary.main' }}>I</Avatar>
+        <Stack direction="row" alignItems="center" sx={{ width: '100%' }}>
+          <Stack direction="row" spacing={0.25} alignItems="center">
             <Typography sx={{ fontWeight: 700, fontSize: 22 }}>InteractHub</Typography>
+            <IconButton size="small" aria-label="Tìm kiếm">
+              <SearchRoundedIcon fontSize="small" />
+            </IconButton>
           </Stack>
-          <IconButton size="small" aria-label="Tìm kiếm">
-            <SearchRoundedIcon fontSize="small" />
-          </IconButton>
+          <Avatar
+            sx={{ width: 28, height: 28, cursor: 'pointer', ml: 'auto' }}
+            src={myProfile?.avatarUrl ?? ''}
+            onClick={handleOpenAvatarMenu}
+          >
+            {myProfile?.fullName?.[0] ?? myProfile?.firstName?.[0] ?? 'U'}
+          </Avatar>
         </Stack>
+      </Box>
 
-        <Stack direction="row" spacing={3} sx={{ mt: 1.2 }}>
-          <TabButton active={activeTopTab === 'friends'} onClick={() => setActiveTopTab('friends')}>
-            Bạn bè
-          </TabButton>
-          <TabButton active={activeTopTab === 'suggestions'} onClick={() => setActiveTopTab('suggestions')}>
-            Gợi ý
-          </TabButton>
+      <Menu
+        id="avatar-menu-mobile-friends"
+        anchorEl={avatarMenuAnchor}
+        open={isAvatarMenuOpen}
+        onClose={handleCloseAvatarMenu}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <MenuItem
+          onClick={() => {
+            handleCloseAvatarMenu()
+            navigate('/profile')
+          }}
+        >
+          <ListItemIcon>
+            <PersonRoundedIcon fontSize="small" />
+          </ListItemIcon>
+          Xem hồ sơ
+        </MenuItem>
+        <MenuItem onClick={handleLogout} disabled={logoutMutation.isPending}>
+          <ListItemIcon>
+            <LogoutRoundedIcon fontSize="small" />
+          </ListItemIcon>
+          {logoutMutation.isPending ? 'Đang đăng xuất...' : 'Đăng xuất'}
+        </MenuItem>
+      </Menu>
+
+      <Box
+        sx={{
+          px: 2,
+          py: 0.5,
+          backgroundColor: '#FFFFFF',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+        }}
+      >
+        <Stack direction="row" spacing={1} sx={{ overflowX: 'auto', pb: 0.5 }}>
+          <Chip
+            label={`Bạn bè (${friends.length})`}
+            clickable
+            color={activeTab === 'friends' ? 'primary' : 'default'}
+            variant={activeTab === 'friends' ? 'filled' : 'outlined'}
+            onClick={() => setActiveTab('friends')}
+          />
+          <Chip
+            label={`Lời mời (${pendingReceived.length})`}
+            clickable
+            color={activeTab === 'requests' ? 'primary' : 'default'}
+            variant={activeTab === 'requests' ? 'filled' : 'outlined'}
+            onClick={() => setActiveTab('requests')}
+          />
+          <Chip
+            label={`Gợi ý (${suggestions.filter((item) => !item.requested).length})`}
+            clickable
+            color={activeTab === 'suggestions' ? 'primary' : 'default'}
+            variant={activeTab === 'suggestions' ? 'filled' : 'outlined'}
+            onClick={() => setActiveTab('suggestions')}
+          />
         </Stack>
       </Box>
 
       <Box sx={{ px: 2, py: 2 }}>
-        {activeTopTab === 'friends' ? (
-          <Stack spacing={2}>
-            <Paper elevation={0} sx={{ borderRadius: 4, p: 1.75, border: '1px solid', borderColor: 'divider' }}>
-              <Stack spacing={1}>
-                <Typography fontWeight={900}>Tổng quan</Typography>
-                <Stack direction="row" justifyContent="space-between">
+        <Stack spacing={2}>
+          <Card sx={{ borderRadius: 3 }}>
+            <CardContent>
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                Tổng quan kết nối
+              </Typography>
+              <Stack spacing={1.25} sx={{ mt: 1.5 }}>
+                <Stack direction="row" spacing={2} justifyContent="space-between">
                   <Typography color="text.secondary">Tổng số bạn bè</Typography>
-                  <Typography fontWeight={900}>{friends.length}</Typography>
+                  <Typography sx={{ fontWeight: 700 }}>{friends.length}</Typography>
                 </Stack>
-                <Stack direction="row" justifyContent="space-between">
-                  <Typography color="text.secondary">Lời mời chờ duyệt</Typography>
-                  <Typography fontWeight={900}>{friendRequests.length}</Typography>
-                </Stack>
-                <Stack direction="row" justifyContent="space-between">
-                  <Typography color="text.secondary">Kết nối mới hôm nay</Typography>
-                  <Typography fontWeight={900}>{acceptedRequestsCount}</Typography>
+                <Stack direction="row" spacing={2} justifyContent="space-between">
+                  <Typography color="text.secondary">Lời mời kết bạn</Typography>
+                  <Typography sx={{ fontWeight: 700 }}>{pendingReceived.length}</Typography>
                 </Stack>
               </Stack>
-            </Paper>
+            </CardContent>
+          </Card>
 
-            <Stack direction="row" justifyContent="space-between" alignItems="baseline">
-              <Typography variant="h6" sx={{ fontWeight: 900 }}>
-                Lời mời kết bạn
-              </Typography>
-              <Button size="small" color="primary" sx={{ fontWeight: 900 }}>
-                Xem tất cả
-              </Button>
-            </Stack>
-
-            {friendRequests.length > 0 ? (
-              <Box sx={{ display: 'flex', gap: 1.5, overflowX: 'auto', pb: 0.5 }}>
-                {friendRequests.map((request) => (
-                  <FriendRequestCard
-                    key={request.id}
-                    request={request}
-                    onAccept={handleAcceptRequest}
-                    onReject={handleRejectRequest}
-                  />
-                ))}
-              </Box>
+          {isLoading ? (
+            <Card sx={{ borderRadius: 3 }}>
+              <CardContent>
+                <Stack direction="row" spacing={1.5} alignItems="center">
+                  <CircularProgress size={20} />
+                  <Typography color="text.secondary">Đang tải dữ liệu bạn bè...</Typography>
+                </Stack>
+              </CardContent>
+            </Card>
+          ) : hasLoadError ? (
+            <Card sx={{ borderRadius: 3 }}>
+              <CardContent>
+                <Alert severity="error">{getApiErrorMessage(loadError, 'Không tải được dữ liệu bạn bè.')}</Alert>
+              </CardContent>
+            </Card>
+          ) : activeTab === 'requests' ? (
+            pendingReceived.length > 0 ? (
+              pendingReceived.map((request) => (
+                <FriendRequestCard
+                  key={request.id}
+                  request={{
+                    id: request.id,
+                    name: request.requesterName,
+                    email: request.requesterEmail,
+                    time: getRelativeTimeLabel(request.createdOn),
+                    avatarUrl: profileMap.get(request.requesterId)?.avatarUrl,
+                  }}
+                  onAccept={handleAcceptRequest}
+                  onReject={handleRejectRequest}
+                  disabled={isMutating}
+                />
+              ))
             ) : (
-              <Paper elevation={0} sx={{ borderRadius: 4, p: 2, border: '1px solid', borderColor: 'divider' }}>
-                <Typography color="text.secondary">Hiện không còn lời mời kết bạn nào.</Typography>
-              </Paper>
-            )}
-
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
-              <Typography variant="h6" sx={{ fontWeight: 900 }}>
-                Danh sách bạn bè
-              </Typography>
-              <Stack direction="row" spacing={0.5} alignItems="center">
-                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 800 }}>
-                  Lọc
-                </Typography>
-                <IconButton size="small" aria-label="Lọc">
-                  <FilterListRoundedIcon fontSize="small" />
-                </IconButton>
-              </Stack>
-            </Stack>
-
-            <Stack spacing={1.25}>
-              {friends.map((friend) => (
-                <FriendRow key={friend.id} friend={friend} />
-              ))}
-            </Stack>
-          </Stack>
-        ) : (
-          <Stack spacing={1.25}>
-            <Typography variant="h6" sx={{ fontWeight: 900 }}>
-              Gợi ý kết bạn
-            </Typography>
-            <Typography color="text.secondary">
-              Những người bạn có thể quen biết dựa trên bạn chung và hoạt động gần đây.
-            </Typography>
-            <Divider sx={{ my: 1 }} />
-
-            {suggestions.length > 0 ? (
+              <Card sx={{ borderRadius: 3 }}>
+                <CardContent>
+                  <Typography color="text.secondary">Hiện chưa có lời mời kết bạn.</Typography>
+                </CardContent>
+              </Card>
+            )
+          ) : activeTab === 'suggestions' ? (
+            suggestions.length > 0 ? (
               suggestions.map((person) => (
-                <Card key={person.id} sx={{ borderRadius: 4 }}>
+                <Card key={person.id} sx={{ borderRadius: 3 }}>
                   <CardContent>
                     <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
-                      <Stack direction="row" spacing={1.25} alignItems="center">
-                        <Avatar>{person.name[0]}</Avatar>
-                        <Box>
-                          <Typography sx={{ fontWeight: 900 }}>{person.name}</Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {person.role}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {person.mutualFriends} bạn chung
+                      <Stack direction="row" spacing={1.5} alignItems="center" sx={{ minWidth: 0 }}>
+                        <Avatar src={profileMap.get(person.id)?.avatarUrl || undefined}>
+                          {person.name?.[0] ?? '?'}
+                        </Avatar>
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography sx={{ fontWeight: 700 }}>{person.name}</Typography>
+                          <Typography variant="body2" color="text.secondary" noWrap>
+                            {person.email}
                           </Typography>
                         </Box>
                       </Stack>
-                      <Button variant="contained" size="small" onClick={() => handleAddSuggestion(person.id)} sx={{ borderRadius: 3 }}>
-                        Thêm bạn
+                      <Button
+                        size="small"
+                        variant={person.requested ? 'outlined' : 'contained'}
+                        color={person.requested ? 'inherit' : 'primary'}
+                        disabled={person.requested || isMutating}
+                        onClick={() => handleSendFriendRequest(person.id)}
+                      >
+                        {person.requested ? 'Đã gửi' : 'Thêm bạn'}
                       </Button>
                     </Stack>
                   </CardContent>
                 </Card>
               ))
             ) : (
-              <Paper elevation={0} sx={{ borderRadius: 4, p: 2, border: '1px solid', borderColor: 'divider' }}>
-                <Typography color="text.secondary">Hiện chưa có gợi ý phù hợp.</Typography>
-              </Paper>
-            )}
-          </Stack>
-        )}
+              <Card sx={{ borderRadius: 3 }}>
+                <CardContent>
+                  <Typography color="text.secondary">Hiện chưa có gợi ý kết bạn nào.</Typography>
+                </CardContent>
+              </Card>
+            )
+          ) : friends.length > 0 ? (
+            friends.map((friend) => (
+              <Card key={friend.userId} sx={{ borderRadius: 3 }}>
+                <CardContent>
+                  <Stack direction="row" alignItems="center" spacing={2}>
+                    <Stack direction="row" spacing={1.5} alignItems="center" sx={{ flex: 1, minWidth: 0 }}>
+                      <Avatar src={profileMap.get(friend.userId)?.avatarUrl || undefined}>
+                        {friend.fullName?.[0] ?? '?'}
+                      </Avatar>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography sx={{ fontWeight: 700 }}>{friend.fullName}</Typography>
+                        <Typography variant="body2" color="text.secondary" noWrap>
+                          {friend.email}
+                        </Typography>
+                        <Chip
+                          label={`Kết nối ${getRelativeTimeLabel(friend.since)}`}
+                          size="small"
+                          color="primary"
+                          variant="outlined"
+                          sx={{ mt: 0.75 }}
+                        />
+                      </Box>
+                    </Stack>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      color="error"
+                      disabled={isMutating}
+                      onClick={() => handleRemoveFriend(friend.userId)}
+                    >
+                      Hủy kết bạn
+                    </Button>
+                  </Stack>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <Card sx={{ borderRadius: 3 }}>
+              <CardContent>
+                <Typography color="text.secondary">Bạn chưa có bạn bè.</Typography>
+              </CardContent>
+            </Card>
+          )}
+        </Stack>
       </Box>
+
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={3000}
+        onClose={() => setNotification((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          severity={notification.severity}
+          variant="filled"
+          onClose={() => setNotification((prev) => ({ ...prev, open: false }))}
+        >
+          {notification.message}
+        </Alert>
+      </Snackbar>
 
       <Paper
         elevation={8}

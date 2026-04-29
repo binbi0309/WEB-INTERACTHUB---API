@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import Alert from '@mui/material/Alert'
 import Avatar from '@mui/material/Avatar'
 import Badge from '@mui/material/Badge'
 import Box from '@mui/material/Box'
@@ -6,88 +8,85 @@ import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Chip from '@mui/material/Chip'
-import Divider from '@mui/material/Divider'
+import CircularProgress from '@mui/material/CircularProgress'
 import IconButton from '@mui/material/IconButton'
+import ListItemIcon from '@mui/material/ListItemIcon'
+import Menu from '@mui/material/Menu'
+import MenuItem from '@mui/material/MenuItem'
 import Paper from '@mui/material/Paper'
+import Snackbar from '@mui/material/Snackbar'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import AddRoundedIcon from '@mui/icons-material/AddRounded'
-import CommentRoundedIcon from '@mui/icons-material/CommentRounded'
-import FavoriteRoundedIcon from '@mui/icons-material/FavoriteRounded'
+import CampaignRoundedIcon from '@mui/icons-material/CampaignRounded'
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded'
-import MoreVertRoundedIcon from '@mui/icons-material/MoreVertRounded'
+import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded'
 import NotificationsNoneRoundedIcon from '@mui/icons-material/NotificationsNoneRounded'
-import NotificationsRoundedIcon from '@mui/icons-material/NotificationsRounded'
 import PeopleRoundedIcon from '@mui/icons-material/PeopleRounded'
-import PersonAddRoundedIcon from '@mui/icons-material/PersonAddRounded'
 import PersonRoundedIcon from '@mui/icons-material/PersonRounded'
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLogoutMutation } from '../../../features/auth/hooks/useAuthMutations'
+import { getApiErrorMessage } from '../../../features/auth/authErrors'
+import {
+  useMarkAllNotificationsAsReadMutation,
+  useMarkNotificationAsReadMutation,
+} from '../../../features/notifications/hooks/useNotificationMutations'
+import {
+  useNotificationsQuery,
+  useUnreadNotificationCountQuery,
+} from '../../../features/notifications/hooks/useNotificationQueries'
+import { useMyProfileQuery } from '../../../features/home/hooks/useHomeQueries'
+
+const EMPTY_LIST = []
+const NOTIFICATION_QUERY_PARAMS = { pageNumber: 1, pageSize: 100 }
 
 const notificationTypes = [
   { id: 'all', label: 'Tất cả' },
-  { id: 'like', label: 'Lượt thích', icon: <FavoriteRoundedIcon fontSize="small" /> },
-  { id: 'comment', label: 'Bình luận', icon: <CommentRoundedIcon fontSize="small" /> },
-  { id: 'request', label: 'Yêu cầu', icon: <PersonAddRoundedIcon fontSize="small" /> },
+  { id: 'unread', label: 'Chưa đọc' },
 ]
 
-const notificationSeed = [
-  {
-    id: 1,
-    actor: 'Jenny Song',
-    message: 'đã thích bài viết của bạn.',
-    detail: '"Hành trình khám phá UI/UX chuyên nghiệp."',
-    type: 'like',
-    read: false,
-    time: '2 phút trước',
-  },
-  {
-    id: 2,
-    actor: 'Minh Tú',
-    message: 'đã bình luận:',
-    detail: '"Thiết kế này thực sự tối giản và sang trọng!"',
-    type: 'comment',
-    read: false,
-    time: '15 phút trước',
-  },
-  {
-    id: 3,
-    actor: 'Cộng đồng Design VN',
-    message: 'mời bạn tham gia nhóm "UI/UX Editorial".',
-    type: 'request',
-    action: { primary: 'Chấp nhận', secondary: 'Từ chối' },
-    read: true,
-    time: '1 giờ trước',
-  },
-  {
-    id: 4,
-    actor: 'Le Anh',
-    message: 'đã nhắc đến bạn trong một bình luận:',
-    detail: '"@nguoidung hãy xem thử tài liệu này nhé."',
-    type: 'comment',
-    read: true,
-    time: '3 giờ trước',
-  },
-  {
-    id: 5,
-    actor: 'Khánh Hoàng',
-    message: 'muốn kết nối với bạn trên InteractHub.',
-    type: 'request',
-    read: true,
-    time: '5 giờ trước',
-  },
-]
+function getRelativeTimeLabel(value) {
+  if (!value) return 'Vừa cập nhật'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'Vừa cập nhật'
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
+  if (seconds < 60) return 'Vừa xong'
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} phút trước`
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)} giờ trước`
+  if (seconds < 604800) return `${Math.floor(seconds / 86400)} ngày trước`
+  return date.toLocaleDateString('vi-VN')
+}
 
-function getTypeConfig(type) {
-  switch (type) {
-    case 'request':
-      return { color: '#0A8F5A', label: 'Yêu cầu' }
+function normalizeNotificationType(typeText) {
+  switch (String(typeText || '').toLowerCase()) {
+    case 'friendrequest':
+    case 'acceptfriend':
+      return 'request'
+    case 'follow':
+      return 'follow'
+    case 'like':
+      return 'like'
+    case 'comment':
+      return 'comment'
+    default:
+      return 'system'
+  }
+}
+
+function getTypeConfig(typeText) {
+  switch (String(typeText || '').toLowerCase()) {
+    case 'friendrequest':
+      return { color: '#0A8F5A', label: 'Lời mời kết bạn' }
+    case 'acceptfriend':
+      return { color: '#1E88E5', label: 'Đã chấp nhận kết bạn' }
+    case 'follow':
+      return { color: '#00897B', label: 'Theo dõi' }
     case 'comment':
       return { color: '#5750E3', label: 'Bình luận' }
     case 'like':
       return { color: '#D64184', label: 'Lượt thích' }
     default:
-      return { color: '#5F6D7E', label: 'Chung' }
+      return { color: '#5F6D7E', label: 'Hệ thống' }
   }
 }
 
@@ -95,44 +94,110 @@ function MobileNotificationsPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const active = location.pathname
-
   const [activeType, setActiveType] = useState('all')
-  const [readFilter, setReadFilter] = useState('all')
-  const [notifications, setNotifications] = useState(notificationSeed)
+  const [avatarMenuAnchor, setAvatarMenuAnchor] = useState(null)
+  const [notification, setNotification] = useState({
+    open: false,
+    severity: 'success',
+    message: '',
+  })
+  const isAvatarMenuOpen = Boolean(avatarMenuAnchor)
+
+  const logoutMutation = useLogoutMutation()
+  const myProfileQuery = useMyProfileQuery()
+  const notificationsQuery = useNotificationsQuery(NOTIFICATION_QUERY_PARAMS)
+  const unreadCountQuery = useUnreadNotificationCountQuery()
+  const markAsReadMutation = useMarkNotificationAsReadMutation()
+  const markAllAsReadMutation = useMarkAllNotificationsAsReadMutation()
+
+  const myProfile = myProfileQuery.data?.data
+  const notifications = notificationsQuery.data?.data ?? EMPTY_LIST
+  const unreadCount = unreadCountQuery.data?.count ?? 0
+  const totalCount = notificationsQuery.data?.totalCount ?? notifications.length
+
+  const isLoading = notificationsQuery.isLoading || unreadCountQuery.isLoading
+  const hasLoadError = notificationsQuery.isError || unreadCountQuery.isError
+  const loadError = notificationsQuery.error || unreadCountQuery.error
+  const isMutating =
+    markAsReadMutation.isPending || markAllAsReadMutation.isPending || logoutMutation.isPending
 
   const overview = useMemo(() => {
-    const likes = notifications.filter((item) => item.type === 'like').length
-    const comments = notifications.filter((item) => item.type === 'comment').length
-    const requests = notifications.filter((item) => item.type === 'request').length
-    const unread = notifications.filter((item) => !item.read).length
-    return { likes, comments, requests, unread }
-  }, [notifications])
+    const likes = notifications.filter((item) => normalizeNotificationType(item.typeText) === 'like').length
+    const comments = notifications.filter((item) => normalizeNotificationType(item.typeText) === 'comment').length
+    const requests = notifications.filter((item) => normalizeNotificationType(item.typeText) === 'request').length
+    const follows = notifications.filter((item) => normalizeNotificationType(item.typeText) === 'follow').length
+    return { likes, comments, requests, follows, unread: unreadCount }
+  }, [notifications, unreadCount])
 
   const filteredNotifications = useMemo(() => {
     return notifications.filter((item) => {
-      const typeMatched = activeType === 'all' || item.type === activeType
-      const readMatched =
-        readFilter === 'all' || (readFilter === 'unread' && !item.read) || (readFilter === 'read' && item.read)
-
-      return typeMatched && readMatched
+      if (activeType === 'unread') return !item.isRead
+      return true
     })
-  }, [activeType, notifications, readFilter])
+  }, [activeType, notifications])
 
-  const toggleReadStatus = (notificationId) => {
-    setNotifications((prev) => prev.map((item) => (item.id === notificationId ? { ...item, read: !item.read } : item)))
+  const showNotification = (severity, message) => {
+    setNotification({ open: true, severity, message })
   }
 
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((item) => ({ ...item, read: true })))
+  const handleMarkAsRead = async (notificationId) => {
+    try {
+      await markAsReadMutation.mutateAsync(notificationId)
+    } catch (error) {
+      showNotification('error', getApiErrorMessage(error, 'Không thể đánh dấu đã đọc thông báo.'))
+    }
   }
 
-  const hasUnread = overview.unread > 0
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllAsReadMutation.mutateAsync()
+      showNotification('success', 'Đã đánh dấu tất cả thông báo là đã đọc.')
+    } catch (error) {
+      showNotification('error', getApiErrorMessage(error, 'Không thể đánh dấu tất cả thông báo là đã đọc.'))
+    }
+  }
+
+  const handleNavigateToNotification = async (item) => {
+    if (!item.url) return
+    if (!item.isRead) {
+      try {
+        await markAsReadMutation.mutateAsync(item.id)
+      } catch (error) {
+        showNotification('error', getApiErrorMessage(error, 'Không thể cập nhật trạng thái thông báo.'))
+        return
+      }
+    }
+    if (item.url.startsWith('/')) {
+      navigate(item.url)
+      return
+    }
+    window.location.assign(item.url)
+  }
+
+  const handleOpenAvatarMenu = (event) => {
+    setAvatarMenuAnchor(event.currentTarget)
+  }
+
+  const handleCloseAvatarMenu = () => {
+    setAvatarMenuAnchor(null)
+  }
+
+  const handleLogout = async () => {
+    setAvatarMenuAnchor(null)
+    try {
+      await logoutMutation.mutateAsync()
+      navigate('/login', { replace: true })
+    } catch (error) {
+      showNotification('error', getApiErrorMessage(error, 'Đăng xuất thất bại. Vui lòng thử lại.'))
+    }
+  }
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: '#F3F4F6', pb: 10 }}>
       <Box
         sx={{
-          px: 2,
+          pl: 2,
+          pr: 0.75,
           py: 1.2,
           backgroundColor: '#FFFFFF',
           borderBottom: '1px solid',
@@ -142,193 +207,223 @@ function MobileNotificationsPage() {
           zIndex: 20,
         }}
       >
-        <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Avatar sx={{ width: 28, height: 28, bgcolor: 'primary.main' }}>I</Avatar>
+        <Stack direction="row" alignItems="center" sx={{ width: '100%' }}>
+          <Stack direction="row" spacing={0.25} alignItems="center">
             <Typography sx={{ fontWeight: 700, fontSize: 22 }}>InteractHub</Typography>
-          </Stack>
-          <Stack direction="row" spacing={0.5}>
             <IconButton size="small" aria-label="Tìm kiếm">
               <SearchRoundedIcon fontSize="small" />
             </IconButton>
-            <IconButton size="small" aria-label="Tuỳ chọn">
-              <MoreVertRoundedIcon fontSize="small" />
-            </IconButton>
           </Stack>
+          <Avatar
+            sx={{ width: 28, height: 28, cursor: 'pointer', ml: 'auto' }}
+            src={myProfile?.avatarUrl ?? ''}
+            onClick={handleOpenAvatarMenu}
+          >
+            {myProfile?.fullName?.[0] ?? myProfile?.firstName?.[0] ?? 'U'}
+          </Avatar>
         </Stack>
       </Box>
 
+      <Menu
+        id="avatar-menu-mobile-notifications"
+        anchorEl={avatarMenuAnchor}
+        open={isAvatarMenuOpen}
+        onClose={handleCloseAvatarMenu}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <MenuItem
+          onClick={() => {
+            handleCloseAvatarMenu()
+            navigate('/profile')
+          }}
+        >
+          <ListItemIcon>
+            <PersonRoundedIcon fontSize="small" />
+          </ListItemIcon>
+          Xem hồ sơ
+        </MenuItem>
+        <MenuItem onClick={handleLogout} disabled={logoutMutation.isPending}>
+          <ListItemIcon>
+            <LogoutRoundedIcon fontSize="small" />
+          </ListItemIcon>
+          {logoutMutation.isPending ? 'Đang đăng xuất...' : 'Đăng xuất'}
+        </MenuItem>
+      </Menu>
+
       <Box sx={{ px: 2, py: 2 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Typography sx={{ fontWeight: 900, fontSize: 28, letterSpacing: -0.5 }}>
-            Thông báo
-          </Typography>
-          <Button
-            size="small"
-            color="primary"
-            disabled={!hasUnread}
-            onClick={markAllAsRead}
-            sx={{ fontWeight: 900, borderRadius: 999 }}
-          >
-            Đánh dấu đã đọc
-          </Button>
-        </Stack>
-
-        <Paper elevation={0} sx={{ mt: 1.5, borderRadius: 4, p: 1.75, border: '1px solid', borderColor: 'divider' }}>
-          <Stack spacing={1}>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <NotificationsRoundedIcon fontSize="small" color="primary" />
-              <Typography sx={{ fontWeight: 900 }}>Tổng quan hoạt động hôm nay</Typography>
-              {hasUnread ? <Chip label={`${overview.unread} chưa đọc`} size="small" color="primary" /> : null}
-            </Stack>
-            <Stack direction="row" justifyContent="space-between">
-              <Typography color="text.secondary">Lượt thích</Typography>
-              <Typography fontWeight={900}>{overview.likes}</Typography>
-            </Stack>
-            <Stack direction="row" justifyContent="space-between">
-              <Typography color="text.secondary">Bình luận</Typography>
-              <Typography fontWeight={900}>{overview.comments}</Typography>
-            </Stack>
-            <Stack direction="row" justifyContent="space-between">
-              <Typography color="text.secondary">Yêu cầu</Typography>
-              <Typography fontWeight={900}>{overview.requests}</Typography>
-            </Stack>
+        <Stack spacing={2}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Typography sx={{ fontWeight: 900, fontSize: 28, letterSpacing: -0.5 }}>Thông báo</Typography>
           </Stack>
-        </Paper>
 
-        <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mt: 2 }}>
-          {notificationTypes.map((item) => (
+          <Card sx={{ borderRadius: 3 }}>
+            <CardContent>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <CampaignRoundedIcon color="primary" fontSize="small" />
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                  Tổng quan hôm nay
+                </Typography>
+              </Stack>
+              <Stack spacing={1.25} sx={{ mt: 1.5 }}>
+                <Stack direction="row" spacing={2} justifyContent="space-between">
+                  <Typography color="text.secondary">Lượt thích mới</Typography>
+                  <Typography sx={{ fontWeight: 700 }}>{overview.likes}</Typography>
+                </Stack>
+                <Stack direction="row" spacing={2} justifyContent="space-between">
+                  <Typography color="text.secondary">Bình luận</Typography>
+                  <Typography sx={{ fontWeight: 700 }}>{overview.comments}</Typography>
+                </Stack>
+                <Stack direction="row" spacing={2} justifyContent="space-between">
+                  <Typography color="text.secondary">Yêu cầu</Typography>
+                  <Typography sx={{ fontWeight: 700 }}>{overview.requests}</Typography>
+                </Stack>
+                <Stack direction="row" spacing={2} justifyContent="space-between">
+                  <Typography color="text.secondary">Lượt theo dõi</Typography>
+                  <Typography sx={{ fontWeight: 700 }}>{overview.follows}</Typography>
+                </Stack>
+                <Stack direction="row" spacing={2} justifyContent="space-between">
+                  <Typography color="text.secondary">Chưa đọc</Typography>
+                  <Chip label={overview.unread} color="primary" size="small" />
+                </Stack>
+              </Stack>
+            </CardContent>
+          </Card>
+
+          <Typography color="text.secondary">
+            Hiển thị {filteredNotifications.length} / {totalCount} thông báo gần nhất.
+          </Typography>
+
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+              {notificationTypes.map((item) => (
+                <Chip
+                  key={item.id}
+                  label={item.label}
+                  clickable
+                  color={activeType === item.id ? 'primary' : 'default'}
+                  variant={activeType === item.id ? 'filled' : 'outlined'}
+                  onClick={() => setActiveType(item.id)}
+                />
+              ))}
+            </Stack>
             <Chip
-              key={item.id}
-              icon={item.icon}
-              label={item.label}
+              label="Đánh dấu tất cả"
               clickable
-              color={activeType === item.id ? 'primary' : 'default'}
-              variant={activeType === item.id ? 'filled' : 'outlined'}
-              onClick={() => setActiveType(item.id)}
-              sx={{ fontWeight: 800 }}
+              variant="outlined"
+              disabled={isMutating || unreadCount === 0 || notifications.length === 0}
+              onClick={handleMarkAllAsRead}
+              sx={{ ml: 'auto' }}
             />
-          ))}
-        </Stack>
+          </Stack>
 
-        <Stack direction="row" spacing={1} sx={{ mt: 1.25 }}>
-          <Chip
-            label="Tất cả"
-            clickable
-            color={readFilter === 'all' ? 'primary' : 'default'}
-            variant={readFilter === 'all' ? 'filled' : 'outlined'}
-            onClick={() => setReadFilter('all')}
-            sx={{ fontWeight: 800 }}
-          />
-          <Chip
-            label="Chưa đọc"
-            clickable
-            color={readFilter === 'unread' ? 'primary' : 'default'}
-            variant={readFilter === 'unread' ? 'filled' : 'outlined'}
-            onClick={() => setReadFilter('unread')}
-            sx={{ fontWeight: 800 }}
-          />
-          <Chip
-            label="Đã đọc"
-            clickable
-            color={readFilter === 'read' ? 'primary' : 'default'}
-            variant={readFilter === 'read' ? 'filled' : 'outlined'}
-            onClick={() => setReadFilter('read')}
-            sx={{ fontWeight: 800 }}
-          />
-        </Stack>
+          {isLoading ? (
+            <Card sx={{ borderRadius: 3 }}>
+              <CardContent>
+                <Stack direction="row" spacing={1.5} alignItems="center">
+                  <CircularProgress size={20} />
+                  <Typography color="text.secondary">Đang tải thông báo...</Typography>
+                </Stack>
+              </CardContent>
+            </Card>
+          ) : hasLoadError ? (
+            <Card sx={{ borderRadius: 3 }}>
+              <CardContent>
+                <Alert severity="error">{getApiErrorMessage(loadError, 'Không tải được danh sách thông báo.')}</Alert>
+              </CardContent>
+            </Card>
+          ) : (
+            <Stack spacing={1.25}>
+              {filteredNotifications.map((item) => {
+                const typeConfig = getTypeConfig(item.typeText)
+                const actorName = item.senderName?.trim()
+                const canOpenDetail = Boolean(item.url)
 
-        <Stack spacing={1.25} sx={{ mt: 2 }}>
-          {filteredNotifications.map((item) => {
-            const typeConfig = getTypeConfig(item.type)
-            const isUnread = !item.read
-
-            return (
-              <Card
-                key={item.id}
-                sx={{
-                  borderRadius: 4,
-                  borderLeft: '4px solid',
-                  borderLeftColor: isUnread ? 'primary.main' : 'transparent',
-                  opacity: item.read ? 0.9 : 1,
-                }}
-              >
-                <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-                  <Stack direction="row" spacing={1.25} alignItems="flex-start">
-                    <Badge
-                      color="primary"
-                      variant="dot"
-                      overlap="circular"
-                      invisible={!isUnread}
-                      anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-                    >
-                      <Avatar sx={{ width: 44, height: 44 }}>{item.actor?.[0]}</Avatar>
-                    </Badge>
-
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
-                        <Typography sx={{ pr: 1 }}>
-                          <Box component="span" sx={{ fontWeight: 900 }}>
-                            {item.actor}
-                          </Box>{' '}
-                          {item.message}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, whiteSpace: 'nowrap' }}>
-                          {item.time}
-                        </Typography>
-                      </Stack>
-
-                      {item.detail ? (
-                        <Typography color="text.secondary" sx={{ mt: 0.75, fontStyle: 'italic' }}>
-                          {item.detail}
-                        </Typography>
-                      ) : null}
-
-                      <Stack direction="row" spacing={1} sx={{ mt: 1 }} useFlexGap flexWrap="wrap">
-                        <Chip
-                          label={typeConfig.label}
-                          size="small"
-                          sx={{ backgroundColor: `${typeConfig.color}1A`, color: typeConfig.color, fontWeight: 800 }}
-                        />
-                        <Chip
-                          label={item.read ? 'Đã đọc' : 'Chưa đọc'}
-                          size="small"
-                          color={item.read ? 'default' : 'primary'}
-                          variant={item.read ? 'outlined' : 'filled'}
-                          sx={{ fontWeight: 800 }}
-                        />
-                      </Stack>
-
-                      {item.action ? (
-                        <Stack direction="row" spacing={1} sx={{ mt: 1.25 }}>
-                          <Button size="small" variant="contained" sx={{ borderRadius: 3, fontWeight: 900 }}>
-                            {item.action.primary}
-                          </Button>
-                          <Button size="small" variant="outlined" color="inherit" sx={{ borderRadius: 3, fontWeight: 900 }}>
-                            {item.action.secondary}
-                          </Button>
-                        </Stack>
-                      ) : (
-                        <Button
-                          size="small"
-                          variant={item.read ? 'outlined' : 'contained'}
-                          onClick={() => toggleReadStatus(item.id)}
-                          sx={{ mt: 1.25, borderRadius: 3, fontWeight: 900 }}
+                return (
+                  <Card
+                    key={item.id}
+                    onClick={canOpenDetail ? () => handleNavigateToNotification(item) : undefined}
+                    sx={{
+                      borderRadius: 3,
+                      borderLeft: '4px solid',
+                      borderLeftColor: item.isRead ? 'transparent' : 'primary.main',
+                      opacity: item.isRead ? 0.88 : 1,
+                      cursor: canOpenDetail ? 'pointer' : 'default',
+                    }}
+                  >
+                    <CardContent>
+                      <Stack direction="row" spacing={1.5} alignItems="flex-start">
+                        <Badge
+                          color="primary"
+                          variant="dot"
+                          overlap="circular"
+                          invisible={item.isRead}
+                          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
                         >
-                          {item.read ? 'Đánh dấu chưa đọc' : 'Đánh dấu đã đọc'}
-                        </Button>
-                      )}
-                    </Box>
-                  </Stack>
-                </CardContent>
-              </Card>
-            )
-          })}
+                          <Avatar>{actorName?.[0] ?? 'H'}</Avatar>
+                        </Badge>
+                        <Box sx={{ minWidth: 0, flex: 1 }}>
+                          <Typography sx={{ textAlign: 'left' }}>
+                            {actorName ? (
+                              <>
+                                <Box component="span" sx={{ fontWeight: 700 }}>
+                                  {actorName}
+                                </Box>{' '}
+                                {item.message}
+                              </>
+                            ) : (
+                              item.message
+                            )}
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ display: 'block', mt: 0.75, textAlign: 'left' }}
+                          >
+                            {getRelativeTimeLabel(item.createdOn)}
+                          </Typography>
+                          <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mt: 1 }}>
+                            <Chip
+                              label={typeConfig.label}
+                              size="small"
+                              sx={{ backgroundColor: `${typeConfig.color}1A`, color: typeConfig.color }}
+                            />
+                            <Chip
+                              label={item.isRead ? 'Đã đọc' : 'Chưa đọc'}
+                              size="small"
+                              color={item.isRead ? 'default' : 'primary'}
+                              variant={item.isRead ? 'outlined' : 'filled'}
+                            />
+                          </Stack>
+                          {!item.isRead ? (
+                            <Button
+                              size="small"
+                              variant="contained"
+                              disabled={isMutating}
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                handleMarkAsRead(item.id)
+                              }}
+                              sx={{ mt: 1.25 }}
+                            >
+                              Đánh dấu tất cả đã đọc
+                            </Button>
+                          ) : null}
+                        </Box>
+                      </Stack>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </Stack>
+          )}
 
-          {filteredNotifications.length === 0 ? (
-            <Paper elevation={0} sx={{ borderRadius: 4, p: 2, border: '1px solid', borderColor: 'divider' }}>
-              <Typography color="text.secondary">Không có thông báo phù hợp với bộ lọc hiện tại.</Typography>
-            </Paper>
+          {!isLoading && !hasLoadError && filteredNotifications.length === 0 ? (
+            <Card sx={{ borderRadius: 3 }}>
+              <CardContent>
+                <Typography color="text.secondary">Không có thông báo phù hợp với bộ lọc hiện tại.</Typography>
+              </CardContent>
+            </Card>
           ) : null}
         </Stack>
       </Box>
@@ -388,7 +483,7 @@ function MobileNotificationsPage() {
           onClick={() => navigate('/notifications')}
           sx={{ cursor: 'pointer', userSelect: 'none' }}
         >
-          <Badge color="primary" variant={hasUnread ? 'dot' : 'standard'} overlap="circular">
+          <Badge color="primary" variant={unreadCount > 0 ? 'dot' : 'standard'} overlap="circular">
             <NotificationsNoneRoundedIcon fontSize="small" color={active === '/notifications' ? 'primary' : 'disabled'} />
           </Badge>
           <Typography variant="caption" color={active === '/notifications' ? 'primary' : 'text.secondary'}>
@@ -407,6 +502,21 @@ function MobileNotificationsPage() {
           </Typography>
         </Stack>
       </Paper>
+
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={3000}
+        onClose={() => setNotification((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          severity={notification.severity}
+          variant="filled"
+          onClose={() => setNotification((prev) => ({ ...prev, open: false }))}
+        >
+          {notification.message}
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }

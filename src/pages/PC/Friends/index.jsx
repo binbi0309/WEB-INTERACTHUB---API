@@ -322,15 +322,22 @@ function FriendsPage() {
                           </Typography>
                         </Box>
                       </Stack>
-                      <Button
-                        size="small"
-                        variant={person.requested ? 'outlined' : 'contained'}
-                        color={person.requested ? 'inherit' : 'primary'}
-                        disabled={person.requested || isMutating}
-                        onClick={() => handleSendFriendRequest(person.id)}
-                      >
-                        {person.requested ? 'Đã gửi' : 'Thêm bạn'}
-                      </Button>
+                      <Stack direction="row" alignItems="center" sx={{ ml: 'auto', flexShrink: 0 }}>
+                        <Button
+                          size="small"
+                          variant={person.requested ? 'outlined' : 'contained'}
+                          color={person.requested ? 'inherit' : 'primary'}
+                          disabled={person.requested || isMutating}
+                          onClick={() => handleSendFriendRequest(person.id)}
+                          sx={{
+                            borderRadius: 2,
+                            minWidth: 120,
+                            px: 1.5,
+                          }}
+                        >
+                          {person.requested ? 'Đã gửi' : 'Thêm bạn'}
+                        </Button>
+                      </Stack>
                     </Stack>
                   </CardContent>
                 </Card>

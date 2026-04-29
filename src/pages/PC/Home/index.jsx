@@ -7,7 +7,6 @@ import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import CardMedia from '@mui/material/CardMedia'
-import Chip from '@mui/material/Chip'
 import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
@@ -134,7 +133,7 @@ function HomePage() {
       .map((user) => ({
         id: user.id,
         name: `${user.firstName} ${user.lastName}`.trim(),
-        statusText: user.statusText,
+        email: user.emailId,
         requested: pendingSentUserIdSet.has(user.id),
       }))
   }, [activeUsers, friendUserIdSet, myProfile?.userId, pendingReceivedUserIdSet, pendingSentUserIdSet])
@@ -684,23 +683,34 @@ function HomePage() {
                       direction="row"
                       alignItems="center"
                       justifyContent="space-between"
-                      sx={{ p: 1, borderRadius: 2, backgroundColor: '#F7F8FA' }}
+                    sx={{ p: 1, borderRadius: 2, backgroundColor: '#F7F8FA', minHeight: 48 }}
                     >
-                      <Stack direction="row" spacing={1.25} alignItems="center">
+                      <Stack direction="row" spacing={1.25} alignItems="center" sx={{ minWidth: 0 }}>
                         <Avatar src={avatarByUserId[item.id] ?? ''}>{item.name[0]}</Avatar>
-                        <Box>
-                          <Typography fontWeight={600}>{item.name}</Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {item.statusText}
+                        <Box sx={{ minWidth: 0, flex: 1 }}>
+                          <Typography fontWeight={600} noWrap>
+                            {item.name}
                           </Typography>
                         </Box>
                       </Stack>
-                      <Chip
-                        label={item.requested ? 'Đã gửi' : 'Thêm bạn'}
-                        size="small"
-                        onClick={() => handleSendFriendRequest(item.id)}
-                        disabled={item.requested || sendFriendRequestMutation.isPending}
-                      />
+                      <Stack direction="row" alignItems="center" spacing={1} sx={{ ml: 'auto', flexShrink: 0 }}>
+                        <Button
+                          size="small"
+                          variant={item.requested ? 'outlined' : 'contained'}
+                          color={item.requested ? 'inherit' : 'primary'}
+                          disabled={item.requested || sendFriendRequestMutation.isPending}
+                          onClick={() => handleSendFriendRequest(item.id)}
+                          sx={{
+                            borderRadius: 2,
+                            px: 1.5,
+                            minWidth: 120,
+                            width: 120,
+                            justifyContent: 'center',
+                          }}
+                        >
+                          {item.requested ? 'Đã gửi' : 'Thêm bạn'}
+                        </Button>
+                      </Stack>
                     </Stack>
                   ))}
                 </Stack>
