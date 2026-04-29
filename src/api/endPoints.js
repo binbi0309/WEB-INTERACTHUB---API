@@ -1,6 +1,6 @@
 const endPoints = {
   USERS: '/users',
-  AUTH_REGISTER: '/register',
+  AUTH_REGISTER: '/api/Auth/Register',
   AUTH_LOGIN: '/login',
   AUTH_LOGOUT: '/api/Auth/Logout',
   AUTH_ME: '/manage/info',

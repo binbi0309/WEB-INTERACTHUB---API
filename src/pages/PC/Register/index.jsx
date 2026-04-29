@@ -10,6 +10,7 @@ import Snackbar from '@mui/material/Snackbar'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
+import MenuItem from '@mui/material/MenuItem'
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded'
 import RadioButtonUncheckedRoundedIcon from '@mui/icons-material/RadioButtonUncheckedRounded'
 import ErrorRoundedIcon from '@mui/icons-material/ErrorRounded'
@@ -18,26 +19,44 @@ import { useRegisterMutation } from '../../../features/auth/hooks/useAuthMutatio
 import { getApiErrorMessage } from '../../../features/auth/authErrors'
 
 const initialForm = {
-  fullName: '',
+  firstName: '',
+  lastName: '',
   email: '',
+  gender: '',
+  phoneNumber: '',
   password: '',
   confirmPassword: '',
 }
 
 const initialTouched = {
-  fullName: false,
+  firstName: false,
+  lastName: false,
   email: false,
+  gender: false,
+  phoneNumber: false,
   password: false,
   confirmPassword: false,
 }
 
-function validateFullName(value) {
+function validateFirstName(value) {
   if (!value.trim()) {
-    return 'Vui lòng nhập họ và tên.'
+    return 'Vui lòng nhập tên.'
   }
 
   if (value.trim().length < 2) {
-    return 'Họ và tên phải có ít nhất 2 ký tự.'
+    return 'Tên phải có ít nhất 2 ký tự.'
+  }
+
+  return ''
+}
+
+function validateLastName(value) {
+  if (!value.trim()) {
+    return 'Vui lòng nhập họ.'
+  }
+
+  if (value.trim().length < 2) {
+    return 'Họ phải có ít nhất 2 ký tự.'
   }
 
   return ''
@@ -51,6 +70,27 @@ function validateEmail(value) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (!emailRegex.test(value)) {
     return 'Email không đúng định dạng.'
+  }
+
+  return ''
+}
+
+function validateGender(value) {
+  if (!value) {
+    return 'Vui lòng chọn giới tính.'
+  }
+
+  return ''
+}
+
+function validatePhoneNumber(value) {
+  if (!value.trim()) {
+    return 'Vui lòng nhập số điện thoại.'
+  }
+
+  const phoneRegex = /^[0-9]{9,15}$/
+  if (!phoneRegex.test(value.trim())) {
+    return 'Số điện thoại không đúng định dạng.'
   }
 
   return ''
@@ -110,8 +150,11 @@ function RegisterPage() {
 
   const errors = useMemo(
     () => ({
-      fullName: validateFullName(form.fullName),
+      firstName: validateFirstName(form.firstName),
+      lastName: validateLastName(form.lastName),
       email: validateEmail(form.email),
+      gender: validateGender(form.gender),
+      phoneNumber: validatePhoneNumber(form.phoneNumber),
       password: validatePassword(form.password),
       confirmPassword: validateConfirmPassword(form.password, form.confirmPassword),
     }),
@@ -159,8 +202,11 @@ function RegisterPage() {
     event.preventDefault()
 
     setTouched({
-      fullName: true,
+      firstName: true,
+      lastName: true,
       email: true,
+      gender: true,
+      phoneNumber: true,
       password: true,
       confirmPassword: true,
     })
@@ -177,6 +223,10 @@ function RegisterPage() {
     try {
       await registerMutation.mutateAsync({
         email: form.email,
+        firstName: form.firstName,
+        lastName: form.lastName,
+        gender: form.gender,
+        phoneNumber: form.phoneNumber,
         password: form.password,
       })
 
@@ -315,16 +365,33 @@ function RegisterPage() {
                 </Stack>
 
                 <Stack spacing={2.5}>
-                  <TextField
-                    label="Họ và tên"
-                    name="fullName"
-                    value={form.fullName}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    error={touched.fullName && Boolean(errors.fullName)}
-                    helperText={touched.fullName ? errors.fullName || ' ' : ' '}
-                    fullWidth
-                  />
+                  <Grid container spacing={2}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <TextField
+                        label="Họ"
+                        name="lastName"
+                        value={form.lastName}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        error={touched.lastName && Boolean(errors.lastName)}
+                        helperText={touched.lastName ? errors.lastName || ' ' : ' '}
+                        fullWidth
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <TextField
+                        label="Tên"
+                        name="firstName"
+                        value={form.firstName}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        error={touched.firstName && Boolean(errors.firstName)}
+                        helperText={touched.firstName ? errors.firstName || ' ' : ' '}
+                        fullWidth
+                      />
+                    </Grid>
+                  </Grid>
+
                   <TextField
                     label="Địa chỉ email"
                     name="email"
@@ -336,6 +403,42 @@ function RegisterPage() {
                     helperText={touched.email ? errors.email || ' ' : ' '}
                     fullWidth
                   />
+
+                  <Grid container spacing={2}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <TextField
+                        label="Giới tính"
+                        name="gender"
+                        select
+                        value={form.gender}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        error={touched.gender && Boolean(errors.gender)}
+                        helperText={touched.gender ? errors.gender || ' ' : ' '}
+                        fullWidth
+                      >
+                        <MenuItem value="">Chọn giới tính</MenuItem>
+                        <MenuItem value="Nam">Nam</MenuItem>
+                        <MenuItem value="Nữ">Nữ</MenuItem>
+                        <MenuItem value="Khác">Khác</MenuItem>
+                      </TextField>
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <TextField
+                        label="Số điện thoại"
+                        name="phoneNumber"
+                        type="tel"
+                        inputMode="numeric"
+                        value={form.phoneNumber}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        error={touched.phoneNumber && Boolean(errors.phoneNumber)}
+                        helperText={touched.phoneNumber ? errors.phoneNumber || ' ' : ' '}
+                        fullWidth
+                      />
+                    </Grid>
+                  </Grid>
+
                   <Grid container spacing={2}>
                     <Grid size={{ xs: 12, sm: 6 }}>
                       <TextField

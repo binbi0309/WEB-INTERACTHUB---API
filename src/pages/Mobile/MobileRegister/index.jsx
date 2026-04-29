@@ -16,31 +16,45 @@ import EmailRoundedIcon from '@mui/icons-material/EmailRounded'
 import ErrorRoundedIcon from '@mui/icons-material/ErrorRounded'
 import KeyRoundedIcon from '@mui/icons-material/KeyRounded'
 import LockRoundedIcon from '@mui/icons-material/LockRounded'
+import PhoneRoundedIcon from '@mui/icons-material/PhoneRounded'
 import PersonRoundedIcon from '@mui/icons-material/PersonRounded'
 import RadioButtonUncheckedRoundedIcon from '@mui/icons-material/RadioButtonUncheckedRounded'
 import VisibilityOffRoundedIcon from '@mui/icons-material/VisibilityOffRounded'
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded'
+import MenuItem from '@mui/material/MenuItem'
 import { Link as RouterLink } from 'react-router-dom'
 import { useRegisterMutation } from '../../../features/auth/hooks/useAuthMutations'
 import { getApiErrorMessage } from '../../../features/auth/authErrors'
 
 const initialForm = {
-  fullName: '',
+  firstName: '',
+  lastName: '',
   email: '',
+  gender: '',
+  phoneNumber: '',
   password: '',
   confirmPassword: '',
 }
 
 const initialTouched = {
-  fullName: false,
+  firstName: false,
+  lastName: false,
   email: false,
+  gender: false,
+  phoneNumber: false,
   password: false,
   confirmPassword: false,
 }
 
-function validateFullName(value) {
-  if (!value.trim()) return 'Vui lòng nhập họ và tên.'
-  if (value.trim().length < 2) return 'Họ và tên phải có ít nhất 2 ký tự.'
+function validateFirstName(value) {
+  if (!value.trim()) return 'Vui lòng nhập tên.'
+  if (value.trim().length < 2) return 'Tên phải có ít nhất 2 ký tự.'
+  return ''
+}
+
+function validateLastName(value) {
+  if (!value.trim()) return 'Vui lòng nhập họ.'
+  if (value.trim().length < 2) return 'Họ phải có ít nhất 2 ký tự.'
   return ''
 }
 
@@ -48,6 +62,19 @@ function validateEmail(value) {
   if (!value.trim()) return 'Vui lòng nhập địa chỉ email.'
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (!emailRegex.test(value)) return 'Email không đúng định dạng.'
+  return ''
+}
+
+function validateGender(value) {
+  if (!value) return 'Vui lòng chọn giới tính.'
+  return ''
+}
+
+function validatePhoneNumber(value) {
+  if (!value.trim()) return 'Vui lòng nhập số điện thoại.'
+  // Chuẩn hoá định dạng đơn giản: chỉ cho phép chữ số (9-15 số)
+  const phoneRegex = /^[0-9]{9,15}$/
+  if (!phoneRegex.test(value.trim())) return 'Số điện thoại không đúng định dạng.'
   return ''
 }
 
@@ -89,8 +116,11 @@ function MobileRegisterPage() {
 
   const errors = useMemo(
     () => ({
-      fullName: validateFullName(form.fullName),
+      firstName: validateFirstName(form.firstName),
+      lastName: validateLastName(form.lastName),
       email: validateEmail(form.email),
+      gender: validateGender(form.gender),
+      phoneNumber: validatePhoneNumber(form.phoneNumber),
       password: validatePassword(form.password),
       confirmPassword: validateConfirmPassword(form.password, form.confirmPassword),
     }),
@@ -118,7 +148,15 @@ function MobileRegisterPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault()
-    setTouched({ fullName: true, email: true, password: true, confirmPassword: true })
+    setTouched({
+      firstName: true,
+      lastName: true,
+      email: true,
+      gender: true,
+      phoneNumber: true,
+      password: true,
+      confirmPassword: true,
+    })
 
     if (!isFormValid) {
       setNotification({
@@ -132,6 +170,10 @@ function MobileRegisterPage() {
     try {
       await registerMutation.mutateAsync({
         email: form.email,
+        firstName: form.firstName,
+        lastName: form.lastName,
+        gender: form.gender,
+        phoneNumber: form.phoneNumber,
         password: form.password,
       })
 
@@ -180,25 +222,48 @@ function MobileRegisterPage() {
 
         <Paper elevation={0} sx={{ borderRadius: 5, p: 3, border: '1px solid', borderColor: 'rgba(0,0,0,0.08)' }}>
           <Stack component="form" spacing={1.5} onSubmit={handleSubmit} noValidate>
-            <TextField
-              label="Họ tên"
-              name="fullName"
-              value={form.fullName}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              error={touched.fullName && Boolean(errors.fullName)}
-              helperText={touched.fullName ? errors.fullName || ' ' : ' '}
-              fullWidth
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <PersonRoundedIcon color="action" fontSize="small" />
-                    </InputAdornment>
-                  ),
-                },
-              }}
-            />
+            <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
+              <TextField
+                label="Họ"
+                name="lastName"
+                value={form.lastName}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={touched.lastName && Boolean(errors.lastName)}
+                helperText={touched.lastName ? errors.lastName || ' ' : ' '}
+                fullWidth
+                sx={{ flex: '1 1 160px' }}
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <PersonRoundedIcon color="action" fontSize="small" />
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+              />
+              <TextField
+                label="Tên"
+                name="firstName"
+                value={form.firstName}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={touched.firstName && Boolean(errors.firstName)}
+                helperText={touched.firstName ? errors.firstName || ' ' : ' '}
+                fullWidth
+                sx={{ flex: '1 1 160px' }}
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <PersonRoundedIcon color="action" fontSize="small" />
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+              />
+            </Stack>
 
             <TextField
               label="Email"
@@ -220,6 +285,45 @@ function MobileRegisterPage() {
                 },
               }}
             />
+
+            <TextField
+              label="Số điện thoại"
+              name="phoneNumber"
+              type="tel"
+              inputMode="numeric"
+              value={form.phoneNumber}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              error={touched.phoneNumber && Boolean(errors.phoneNumber)}
+              helperText={touched.phoneNumber ? errors.phoneNumber || ' ' : ' '}
+              fullWidth
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <PhoneRoundedIcon color="action" fontSize="small" />
+                    </InputAdornment>
+                  ),
+                },
+              }}
+            />
+
+            <TextField
+              label="Giới tính"
+              name="gender"
+              select
+              value={form.gender}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              error={touched.gender && Boolean(errors.gender)}
+              helperText={touched.gender ? errors.gender || ' ' : ' '}
+              fullWidth
+            >
+              <MenuItem value="">Chọn giới tính</MenuItem>
+              <MenuItem value="Nam">Nam</MenuItem>
+              <MenuItem value="Nữ">Nữ</MenuItem>
+              <MenuItem value="Khác">Khác</MenuItem>
+            </TextField>
 
             <TextField
               label="Mật khẩu"
